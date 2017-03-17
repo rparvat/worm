@@ -1,4 +1,4 @@
-#include <djikstra.h>
+#include "dijkstra.h"
 
 int main() {
     return 0;
