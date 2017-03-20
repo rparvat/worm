@@ -43,15 +43,19 @@ Graph::Graph(int z)
     this->halfProbs = array;
 }
 
-float Graph::getEdgeWeight(int x1, int y1, int x2, int y2)
+float Graph::getEdgeWeight(Point point1, Point point2)
 {
-    assert(((x1 == x2) && abs(y1 - y2) == 1) || ((y1 == y2) && abs(x1 - x2) == 1));
-    float probSum = halfProbs[x1][y1] + halfProbs[x2][y2];
+    int x1, y1, x2, y2;
+    float probSum = halfProbs[point1.first][point1.second] 
+        + halfProbs[point2.first][point2.second];
     return probSum;
 }
 
-vector<Point> Graph::getNeighbors(int x, int y)
+vector<Point> Graph::getNeighbors(Point point)
 {
+    int x = point.first;
+    int y = point.second;
+
     vector<Point> neighbors;
     bool xTooLow, xTooHigh, yTooLow, yTooHigh;
     xTooLow = x == 0;

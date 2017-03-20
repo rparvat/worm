@@ -4,4 +4,5 @@
 using namespace std;
 
 //cimg::CImg<unsigned char> openMembraneIndiv(int z, int y, int x); 
-map<int, pair<int, int>>* getSeeds(int z);
+map<int, Point>* getSeeds(int z);
+void reconstruct(int z);

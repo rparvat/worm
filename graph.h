@@ -6,12 +6,12 @@ using namespace std;
 typedef pair<int, int> Point;
 
 class Graph {
+  public:
     float** halfProbs;
     int x_max, y_max;
-    
-  public:
-    float getEdgeWeight(int x1, int y1, int x2, int y2);
-    vector<pair<int, int>> getNeighbors(int x, int y);
+
+    float getEdgeWeight(Point point1, Point point2);
+    vector<Point> getNeighbors(Point point);
     Graph(int z);
     ~Graph();
 };
