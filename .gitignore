@@ -1,3 +1,5 @@
 *.o
 worm
 data/
+probs_txt/
+*.swp

@@ -7,9 +7,10 @@ def convert(prefix):
     f = f['Buffer']
     np.savetxt(txtDirectory + prefix + ".txt", f, delimiter = ' ', fmt = "%d")
 
-matDirectory = "/Users/Rajeev/Documents/worm/data/probs_by_z/"
-txtDirectory = "/Users/Rajeev/Documents/worm/data/probs_txt/"
+matDirectory = "/home/heather/worm/probs_by_z/"
+txtDirectory = "/home/rajeev/worm/probs_txt/"
 
 for filename in os.listdir(matDirectory):
+    print filename
     prefix = filename[:len(filename) - 4]
     convert(prefix)

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <fstream>
 
 using namespace std;
 
@@ -25,6 +26,7 @@ Graph::Graph(int z)
 {
     string path = worm_path + "probs_txt/";
     string filename = "full_z_" + zToString(z) + ".txt";
+    ifstream in(filename, ios_base::in);
     float** array = new float*[X_MAX];
     for (int x = 0; x < X_MAX; x++)
     {
@@ -32,7 +34,7 @@ Graph::Graph(int z)
         for (int y = 0; y < Y_MAX; y++)
         {
             int pixel;
-            cin >> pixel;
+            in >> pixel;
             array[x][y] = float(pixel) / 256.0;
         }
     }
