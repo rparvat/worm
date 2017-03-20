@@ -1,17 +1,28 @@
+#include <iostream>
+#include <string>
 #include "dijkstra.h"
 
-string locToString(int loc)
+void computeNeurons(int z)
 {
-    int DEC_SIZE = 8;
-    string s = to_string(loc);
-    for (auto i = 0; i < DEC_SIZE - s.length(); i++)
-    {
-        s = "0" + s;
-    }
-    return s;
+    Graph graph = openProbs(z);
+    auto seeds = getSeeds(z);
 }
 
-cimg::CImg<unsigned char> openMembrane(int z, int y, int x) {
+Graph openProbs(int z)
+{
+    return Graph(z);
+}
+
+// returns map from seed id to (x,y) coordinates of the seed in this frame.
+map<int, pair<int, int>>* getSeeds(int z)
+{ 
+    auto seeds = new map<int, pair<int, int>>();
+    return seeds;
+}
+
+
+/*
+cimg::CImg<unsigned char> openMembraneIndiv(int z, int y, int x) {
     string z_str = locToString(z);
     string y_str = locToString(y);
     string x_str = locToString(z);
@@ -21,3 +32,6 @@ cimg::CImg<unsigned char> openMembrane(int z, int y, int x) {
     //membrane.get_crop
     return membrane;
 }
+*/
+
+
