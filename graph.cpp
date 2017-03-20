@@ -50,6 +50,32 @@ float Graph::getEdgeWeight(int x1, int y1, int x2, int y2)
     return probSum;
 }
 
+vector<Point> Graph::getNeighbors(int x, int y)
+{
+    vector<Point> neighbors;
+    bool xTooLow, xTooHigh, yTooLow, yTooHigh;
+    xTooLow = x == 0;
+    xTooHigh = x == x_max - 1;
+    yTooLow = y == 0;
+    yTooHigh = y == y_max - 1;
+    if (!xTooLow)
+    {
+        if (!yTooLow) neighbors.push_back((Point(x - 1, y - 1)));
+        neighbors.push_back(Point(x - 1, y));
+        if (!yTooHigh) neighbors.push_back((Point(x - 1, y + 1)));
+    }
+    if (!yTooLow) neighbors.push_back((Point(x, y - 1)));
+    if (!yTooHigh) neighbors.push_back((Point(x, y + 1)));
+    if (!xTooHigh)
+    {
+        if (!yTooLow) neighbors.push_back((Point(x + 1, y - 1)));
+        neighbors.push_back(Point(x + 1, y));
+        if (!yTooHigh) neighbors.push_back((Point(x + 1, y + 1)));
+    }
+    return neighbors;
+}
+
+
 Graph::~Graph() 
 {
     delete(halfProbs);
