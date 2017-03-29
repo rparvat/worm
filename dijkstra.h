@@ -21,6 +21,7 @@ class Dijkstra {
         
         Dijkstra(Graph inputGraph);
         void reconcile(DijkstraThread& thread);
+        void save();
     private:
         void initArrays();
         mutex mtx;

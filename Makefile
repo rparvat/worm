@@ -1,8 +1,8 @@
 CC=g++
 CFLAGS= -std=c++11
-LDFLAGS= -L/home/armafire/tools/cilkplus-install/lib64 -lcilkrts
+LDFLAGS= -L/home/armafire/tools/cilkplus-install/lib64 -lcilkrts -lpthread -lpng -lX11
 INCLUDES= -fcilkplus
-DEPS = graph.h dijkstra_thread.h dijkstra.h
+DEPS = CImg.h graph.h dijkstra_thread.h dijkstra.h
 OBJ = graph.o dijkstra.o main.o
 
 worm: $(OBJ)

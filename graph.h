@@ -17,5 +17,8 @@ class Graph {
     Graph(int z);
     ~Graph();
 };
+
+string getImageName(int z, int yblock, int xblock);
+float** openImages(int z);
         
 

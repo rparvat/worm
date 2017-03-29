@@ -15,7 +15,7 @@ map<int, Point>* getSeeds(int desiredZ)
     // assuming the input is ID X Y Z
     // and top of input has number of things
     cout << "getting seeds... ";
-    string filename = "home/rajeev/worm/skeleton/seeds.txt";
+    string filename = "/home/rajeev/worm/skeleton/seeds.txt";
     ifstream in(filename, ios_base::in);
     
     auto seeds = new map<int, pair<int, int>>();
@@ -29,16 +29,14 @@ map<int, Point>* getSeeds(int desiredZ)
         in >> x;
         in >> y;
         in >> z;
-        x /= 2;
-        y /= 2;
-        z /= 30;
         if (desiredZ == z)
         {
             pair<int, int> tup(x, y);
-            (*seeds)[seed] = tup;
+            seeds->insert(pair<int, Point>(seed, tup));
+            //(*seeds)[seed] = tup;
         }
     }
-    cout << "done! There are " << numSeeds << " seeds.\n";
+    cout << "done! There are " << seeds->size() << " seeds.\n";
     return seeds;
 }
 
@@ -73,6 +71,7 @@ void Dijkstra::reconcile(DijkstraThread& thread)
     auto& toUpdate = thread.toUpdate;
 
     mtx.lock();
+    cout << "reconciling! there are " << toUpdate.size() << "updates\n";
     for (auto it = toUpdate.begin(); it != toUpdate.end(); it++)
     {
         float distance = it->second;
@@ -87,6 +86,11 @@ void Dijkstra::reconcile(DijkstraThread& thread)
     }
     toUpdate.clear();
     mtx.unlock();
+}
+
+void Dijkstra::save()
+{
+    //write to file
 }
 
 DijkstraThread::DijkstraThread(int seedNum, Point loc, Dijkstra& original):
@@ -104,6 +108,7 @@ void DijkstraThread::run()
     auto& graph = this->dijkstra.graph;
     while (distances.size() > 0)
     {
+        cout << "iterating in " << seed << "\n";
         auto it = distances.begin();
 
         float distance = it->first;
@@ -148,6 +153,7 @@ void DijkstraThread::run()
             updateCount = 0;
         }
     }
+    cout << "thread done!\n";
 }
 
 
@@ -158,11 +164,13 @@ void reconstruct(int z)
     auto seeds = getSeeds(z);
 
     Dijkstra dijkstra(graph);
+    cout << "Dijkstra is initialized\n";
 
-    for (map<int, Point>::iterator it = seeds->begin(); it != seeds->end(); it++)
+    for (auto& mapPair : *seeds)
     {
-        int seed = it->first;
-        Point point = it->second;
+        int seed = mapPair.first;
+        Point point = mapPair.second;
+        cout << "spawning Dijkstra Thread!\n";
         auto thread = DijkstraThread(seed, point, dijkstra);
         cilk_spawn thread.run();
     }
