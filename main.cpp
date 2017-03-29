@@ -1,5 +1,6 @@
 #include <boost/graph/dijkstra_shortest_paths.hpp>
+#include "dijkstra.h"
 
 int main() {
-    return 0;
+    reconstruct(502);;
 }
