@@ -1,14 +1,15 @@
 CC=g++
-# LIBS = -I/usr/X11R6/include -L/usr/X11R6/lib -lX11
-CFLAGS= -std=c++11 -Wno-c++11-extensions #$(LIBS)
-DEPS = graph.h dijkstra.h
+CFLAGS= -std=c++11
+LDFLAGS= -L/home/armafire/tools/cilkplus-install/lib64 -lcilkrts
+INCLUDES= -fcilkplus
+DEPS = graph.h dijkstra_thread.h dijkstra.h
 OBJ = graph.o dijkstra.o main.o
 
 worm: $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ ;rm *o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -o $@ $^ ;rm *o
 
 $(OBJ) : %.o:  %.cpp $(DEPS)
-	 $(CC) $(CFLAGS) -c -o $@ $<
+	 $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) $< -c -o $@
 
 all:
 	make worm

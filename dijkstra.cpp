@@ -1,9 +1,14 @@
 #include <iostream>
 #include <string>
 #include "dijkstra.h"
+#include "dijkstra_thread.h"
 #include <fstream>
-#include <unordered_map>
+#include <cilk/cilk.h>
+#include <climits>
 
+float DEFAULT_DISTANCE = INT_MAX;
+int DEFAULT_SEED = 0;
+int UPDATES_PER_RECONCILE = 200;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
 { 
@@ -33,61 +38,92 @@ map<int, Point>* getSeeds(int desiredZ)
             (*seeds)[seed] = tup;
         }
     }
-    cout << "done!\n";
+    cout << "done! There are " << numSeeds << " seeds.\n";
     return seeds;
 }
 
-struct pairhash {
-    public:
-    template <typename T, typename U>
-    std::size_t operator()(const pair<T, U> &x) const
-    {
-        return hash<T>()(x.first) ^ hash<U>()(x.second);
-    }
-};
 
-void reconstruct(int z)
+Dijkstra::Dijkstra(Graph inputGraph): graph(inputGraph)
 {
-    Graph graph(z);
-    auto seeds = getSeeds(z);
+    initArrays();
+}
 
-    float finalDists[graph.x_max][graph.y_max];
-    int assignments[graph.x_max][graph.y_max];
+void Dijkstra::initArrays()
+{
+    finalDists = new float*[graph.x_max];
+    assignments = new int*[graph.x_max];
 
-    for (int i = 0; i < graph.x_max; i++)
+    cilk_for (int i = 0; i < graph.x_max; i++)
     {
+        finalDists[i] = new float[graph.y_max];
+        assignments[i] = new int[graph.y_max];
         for (int j = 0; j < graph.y_max; j++)
         {
-            finalDists[i][j] = 0;
-            assignments[i][j]= 0;
+            finalDists[i][j] = DEFAULT_DISTANCE;
+            assignments[i][j]= DEFAULT_SEED;
         }
     }
+}
 
-    multimap<float, Point> distances;
-    unordered_map<Point, multimap<float, Point>::iterator, pairhash> iterators;
-    for (auto kv : *seeds)
+void Dijkstra::reconcile(DijkstraThread& thread)
+{
+    auto& distances = thread.distances;
+    auto& iterators = thread.iterators;
+    auto seed = thread.seed;
+    auto& toUpdate = thread.toUpdate;
+
+    mtx.lock();
+    for (auto it = toUpdate.begin(); it != toUpdate.end(); it++)
     {
-        int seed = kv.first;
-        Point point = kv.second;
-        auto it = distances.emplace(float(1.0), point);
-        iterators[point] = it;
-        assignments[point.first][point.second] = seed;
+        float distance = it->second;
+        Point point = it->first;
+        
+        float curFinalDist = finalDists[point.first][point.second];
+        if (curFinalDist == DEFAULT_DISTANCE || distance < curFinalDist)
+        {
+            finalDists[point.first][point.second] = distance;
+            assignments[point.first][point.second] = seed;
+        }
     }
-    while (!distances.empty())
+    toUpdate.clear();
+    mtx.unlock();
+}
+
+DijkstraThread::DijkstraThread(int seedNum, Point loc, Dijkstra& original):
+    dijkstra(original)
+{
+    seed = seedNum;
+
+    auto it = distances.emplace(float(0.0), loc);
+    iterators[loc] = it;
+}
+
+void DijkstraThread::run()
+{
+    int updateCount = 0;
+    auto& graph = this->dijkstra.graph;
+    while (distances.size() > 0)
     {
         auto it = distances.begin();
+
         float distance = it->first;
         Point point = it->second;
-        int seed = assignments[point.first][point.second];
-        finalDists[point.first][point.second] = distance;
+
+        toUpdate[point] = distance;
 
         distances.erase(it);
+        iterators.erase(point);
+
         for (Point neighbor: graph.getNeighbors(point))
         {
-            if (finalDists[neighbor.first][neighbor.second] != 0) continue;
+            float curFinalDist = this->dijkstra.finalDists[neighbor.first][neighbor.second];
             float newDistance = distance + graph.getEdgeWeight(point, neighbor);
-            bool shouldUpdate = true;
-            if (iterators.count(neighbor))
+
+            bool shouldUpdate = (curFinalDist == DEFAULT_DISTANCE)
+                || (newDistance < curFinalDist);
+            shouldUpdate &= (!toUpdate.count(neighbor));
+
+            if (shouldUpdate && iterators.count(neighbor))
             {
                 it = iterators[neighbor];
                 if (newDistance < it->first)
@@ -101,12 +137,36 @@ void reconstruct(int z)
                 }
             }
             if (shouldUpdate) {
-                assignments[neighbor.first][neighbor.second] = seed;
                 it = distances.emplace(newDistance, neighbor);
-                iterators[point] = it;
+                iterators[neighbor] = it;
             }
         }
+        updateCount++;
+        if (updateCount == UPDATES_PER_RECONCILE)
+        {
+            dijkstra.reconcile(*this);
+            updateCount = 0;
+        }
     }
+}
+
+
+
+void reconstruct(int z)
+{
+    Graph graph(z);
+    auto seeds = getSeeds(z);
+
+    Dijkstra dijkstra(graph);
+
+    for (map<int, Point>::iterator it = seeds->begin(); it != seeds->end(); it++)
+    {
+        int seed = it->first;
+        Point point = it->second;
+        auto thread = DijkstraThread(seed, point, dijkstra);
+        cilk_spawn thread.run();
+    }
+    cilk_sync;
     // TODO: save this information somehow.                
 }
 

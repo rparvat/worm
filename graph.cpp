@@ -6,10 +6,9 @@
 
 using namespace std;
 
-string worm_path = "/home/heather/worm/";
-
-int X_MAX = 37888;
-int Y_MAX = 33792;
+static string worm_path = "/home/heather/worm/";
+static int X_MAX = 38912;
+static int Y_MAX = 50176;
 
 string zToString(int z) 
 {
@@ -45,7 +44,6 @@ Graph::Graph(int z)
 
 float Graph::getEdgeWeight(Point point1, Point point2)
 {
-    int x1, y1, x2, y2;
     float probSum = halfProbs[point1.first][point1.second] 
         + halfProbs[point2.first][point2.second];
     return probSum;
@@ -57,11 +55,12 @@ vector<Point> Graph::getNeighbors(Point point)
     int y = point.second;
 
     vector<Point> neighbors;
+    neighbors.reserve(8);
     bool xTooLow, xTooHigh, yTooLow, yTooHigh;
-    xTooLow = x == 0;
-    xTooHigh = x == x_max - 1;
-    yTooLow = y == 0;
-    yTooHigh = y == y_max - 1;
+    xTooLow = (x == 0);
+    xTooHigh = (x == x_max - 1);
+    yTooLow = (y == 0);
+    yTooHigh = (y == y_max - 1);
     if (!xTooLow)
     {
         if (!yTooLow) neighbors.push_back((Point(x - 1, y - 1)));
