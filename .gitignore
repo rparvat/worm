@@ -3,3 +3,7 @@ worm
 data/
 probs_txt/
 *.swp
+skeleton/
+output_*.txt
+output_*.png
+

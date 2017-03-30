@@ -18,13 +18,15 @@ class Dijkstra {
         float** finalDists;
         int** assignments;
         Graph& graph;
+        mutex mtx;
+        uint64_t overwrites;
+        uint64_t threadsDone;
         
         Dijkstra(Graph& inputGraph);
         void reconcile(DijkstraThread& thread);
         void save();
     private:
         void initArrays();
-        mutex mtx;
 };
 
 

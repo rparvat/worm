@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -std=c++11
+CFLAGS= -std=c++11 #-g
 LDFLAGS= -L/home/armafire/tools/cilkplus-install/lib64 -lcilkrts -lpthread -lpng -lX11
 INCLUDES= -fcilkplus
 DEPS = CImg.h graph.h dijkstra_thread.h dijkstra.h

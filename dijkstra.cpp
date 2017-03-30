@@ -8,7 +8,9 @@
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
-int UPDATES_PER_RECONCILE = 1000;
+int UPDATES_PER_RECONCILE = 30000;
+int NEED_TO_RECONCILE = 100000;
+int MAX_DISTANCE = 100000;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
 { 
@@ -36,7 +38,7 @@ map<int, Point>* getSeeds(int desiredZ)
             //(*seeds)[seed] = tup;
         }
     }
-    cout << "done! There are " << seeds->size() << " seeds.\n";
+    cout << "done! There are " << seeds->size() << " seeds for this z.\n";
     return seeds;
 }
 
@@ -44,6 +46,8 @@ map<int, Point>* getSeeds(int desiredZ)
 Dijkstra::Dijkstra(Graph& inputGraph): 
     graph(inputGraph)
 {
+    overwrites = 0;
+    threadsDone = 0;
     initArrays();
 }
 
@@ -67,6 +71,7 @@ void Dijkstra::initArrays()
     }
 }
 
+// MUST HOLD LOCK WHEN CALLING THIS
 void Dijkstra::reconcile(DijkstraThread& thread)
 {
     auto& distances = thread.distances;
@@ -74,27 +79,41 @@ void Dijkstra::reconcile(DijkstraThread& thread)
     auto seed = thread.seed;
     auto& toUpdate = thread.toUpdate;
 
-    mtx.lock();
-    cout << "reconciling! there are " << toUpdate.size() << "updates\n";
     for (auto it = toUpdate.begin(); it != toUpdate.end(); it++)
     {
         float distance = it->second;
         Point point = it->first;
         
         float curFinalDist = finalDists[point.first][point.second];
-        if (curFinalDist == DEFAULT_DISTANCE || distance < curFinalDist)
+        if (curFinalDist == DEFAULT_DISTANCE)
         {
+            finalDists[point.first][point.second] = distance;
+            assignments[point.first][point.second] = seed;
+        }
+        else if (distance < curFinalDist)
+        {
+            overwrites++;
             finalDists[point.first][point.second] = distance;
             assignments[point.first][point.second] = seed;
         }
     }
     toUpdate.clear();
-    mtx.unlock();
 }
 
 void Dijkstra::save()
 {
-    //write to file
+    cout << "saving seed assignments...";
+    ofstream output("output_" + to_string(graph.z) + ".txt");
+    for (int x = 0; x < graph.x_max; x++)
+    {
+        for (int y = 0; y < graph.y_max; y++)
+        {
+            output << assignments[x][y] << " ";
+        }
+        output << "\n";
+    }
+    output.close();
+    cout << " done!\n";
 }
 
 DijkstraThread::DijkstraThread(int seedNum, Point loc, Dijkstra& original):
@@ -116,16 +135,21 @@ void DijkstraThread::run()
 
         float distance = it->first;
         Point point = it->second;
-
-        toUpdate[point] = distance;
-
+        
         distances.erase(it);
         iterators.erase(point);
 
+        float curFinal = this->dijkstra.finalDists[point.first][point.second];
+
+        if (curFinal < distance) continue;
+        toUpdate[point] = distance;
+
         for (Point neighbor: graph.getNeighbors(point))
+
         {
             float curFinalDist = this->dijkstra.finalDists[neighbor.first][neighbor.second];
             float newDistance = distance + graph.getEdgeWeight(point, neighbor);
+            if (newDistance > MAX_DISTANCE) continue;
 
             bool shouldUpdate = (curFinalDist == DEFAULT_DISTANCE)
                 || (newDistance < curFinalDist);
@@ -150,22 +174,50 @@ void DijkstraThread::run()
             }
         }
         updateCount++;
-        if (updateCount == UPDATES_PER_RECONCILE)
+        if (updateCount >= UPDATES_PER_RECONCILE && dijkstra.mtx.try_lock())
         {
             dijkstra.reconcile(*this);
+            dijkstra.mtx.unlock();
+            updateCount = 0;
+        }
+        else if (updateCount == NEED_TO_RECONCILE)
+        {
+            auto it = toUpdate.begin();
+            while (it != toUpdate.end())
+            {
+                Point thisPoint = it->first;
+                float thisDistance = it->second;
+                if (this->dijkstra.finalDists[thisPoint.first][thisPoint.second] <= thisDistance)
+                {
+                    it = toUpdate.erase(it);
+                }
+                else 
+                {
+                    it++;
+                }
+            }
+            dijkstra.mtx.lock();
+            dijkstra.reconcile(*this);
+            dijkstra.mtx.unlock();
             updateCount = 0;
         }
     }
-    cout << "thread done!\n";
+    dijkstra.mtx.lock();
+    dijkstra.reconcile(*this);
+    dijkstra.threadsDone++;
+    dijkstra.mtx.unlock();
+    updateCount = 0;
+
+    cout << "thread done #" << dijkstra.threadsDone << "! we have " << dijkstra.overwrites << " overwites so far.\n";
 }
 
 
 
 void reconstruct(int z)
 {
-    Graph graph(z);
     auto seeds = getSeeds(z);
 
+    Graph graph(z);
     Dijkstra dijkstra(graph);
     cout << "Dijkstra is initialized\n";
 
@@ -178,7 +230,7 @@ void reconstruct(int z)
         cilk_spawn thread->run();
     }
     cilk_sync;
-    // TODO: save this information somehow.                
+    dijkstra.save();
 }
 
 

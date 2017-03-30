@@ -28,7 +28,7 @@ string zToString(int z)
     return s;
 }
 
-Graph::Graph(int z)
+Graph::Graph(int zDesired)
 {
     /*
     string path = worm_path + "probs_txt/";
@@ -48,6 +48,7 @@ Graph::Graph(int z)
     this->x_max = X_MAX;
     this->y_max = Y_MAX;
     */
+    this->z = zDesired;
     this->x_max = X_I_MAX;
     this->y_max = Y_I_MAX;
     this->halfProbs = openImages(z);
@@ -92,6 +93,10 @@ vector<Point> Graph::getNeighbors(Point point)
 
 Graph::~Graph() 
 {
+    for (int i = 0; i < x_max; i++)
+    {
+        delete(halfProbs[i]);
+    }
     delete(halfProbs);
 }
 
@@ -127,7 +132,7 @@ float** openImages(int z)
         array[x] = new float[Y_I_MAX];
         for (int y = 0; y < Y_I_MAX; y++)
         {
-            array[x][y] = 1.0;
+            array[x][y] = 100000;
         }
     }
 
