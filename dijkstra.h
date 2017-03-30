@@ -17,9 +17,9 @@ class Dijkstra {
     public:
         float** finalDists;
         int** assignments;
-        Graph graph;
+        Graph& graph;
         
-        Dijkstra(Graph inputGraph);
+        Dijkstra(Graph& inputGraph);
         void reconcile(DijkstraThread& thread);
         void save();
     private:

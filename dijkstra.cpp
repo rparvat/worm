@@ -8,7 +8,7 @@
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
-int UPDATES_PER_RECONCILE = 200;
+int UPDATES_PER_RECONCILE = 1000;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
 { 
@@ -41,7 +41,8 @@ map<int, Point>* getSeeds(int desiredZ)
 }
 
 
-Dijkstra::Dijkstra(Graph inputGraph): graph(inputGraph)
+Dijkstra::Dijkstra(Graph& inputGraph): 
+    graph(inputGraph)
 {
     initArrays();
 }
@@ -51,10 +52,13 @@ void Dijkstra::initArrays()
     finalDists = new float*[graph.x_max];
     assignments = new int*[graph.x_max];
 
-    cilk_for (int i = 0; i < graph.x_max; i++)
+    for (int i = 0; i < graph.x_max; i++)
     {
         finalDists[i] = new float[graph.y_max];
         assignments[i] = new int[graph.y_max];
+    }
+    cilk_for (int i = 0; i < graph.x_max; i++)
+    {
         for (int j = 0; j < graph.y_max; j++)
         {
             finalDists[i][j] = DEFAULT_DISTANCE;
@@ -108,7 +112,6 @@ void DijkstraThread::run()
     auto& graph = this->dijkstra.graph;
     while (distances.size() > 0)
     {
-        cout << "iterating in " << seed << "\n";
         auto it = distances.begin();
 
         float distance = it->first;
@@ -171,8 +174,8 @@ void reconstruct(int z)
         int seed = mapPair.first;
         Point point = mapPair.second;
         cout << "spawning Dijkstra Thread!\n";
-        auto thread = DijkstraThread(seed, point, dijkstra);
-        cilk_spawn thread.run();
+        auto thread = new DijkstraThread(seed, point, dijkstra);
+        cilk_spawn thread->run();
     }
     cilk_sync;
     // TODO: save this information somehow.                

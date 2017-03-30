@@ -122,15 +122,16 @@ string getImageName(int z, int yblock, int xblock)
 float** openImages(int z)
 {
     float** array = new float*[X_I_MAX];
-    cilk_for (int x = 0; x < X_I_MAX; x++)
+    for (int x = 0; x < X_I_MAX; x++)
     {
         array[x] = new float[Y_I_MAX];
         for (int y = 0; y < Y_I_MAX; y++)
         {
-            array[x][y] = 1;
+            array[x][y] = 1.0;
         }
     }
-    cilk_for (int xblock = 1; xblock < X_BLOCK_MAX; xblock++)
+
+    for (int xblock = 1; xblock < X_BLOCK_MAX; xblock++)
     {
         for (int yblock = 1; yblock < Y_BLOCK_MAX; yblock++)
         {
