@@ -11,6 +11,7 @@ class Graph {
   public:
     float** halfProbs;
     int z, x_max, y_max;
+    int x_min, y_min, desired_x_max, desired_y_max;
 
     float getEdgeWeight(Point point1, Point point2);
     vector<Point> getNeighbors(Point point);

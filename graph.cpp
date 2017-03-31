@@ -10,12 +10,21 @@ using namespace std;
 
 static string worm_path = "/home/heather/worm/";
 
+// these are just the overall dimensions.
 static int X_I_MAX = 101631;
 static int Y_I_MAX = 45567;
 
+// these give the area that we are interested in.
+static int X_MIN_DESIRED = 15000;
+static int X_MAX_DESIRED = 25000;
+
+static int Y_MIN_DESIRED = 5000;
+static int Y_MAX_DESIRED = 10000;
+
+// these are helpers -- can ignore.
 static int BLOCK_SIZE = 1024;
-static int X_BLOCK_MAX = X_I_MAX / BLOCK_SIZE + 1;
-static int Y_BLOCK_MAX = Y_I_MAX / BLOCK_SIZE + 1;
+static int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
+static int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
 
 string zToString(int z) 
 {
@@ -51,6 +60,13 @@ Graph::Graph(int zDesired)
     this->z = zDesired;
     this->x_max = X_I_MAX;
     this->y_max = Y_I_MAX;
+
+    this->x_min = X_MIN_DESIRED;
+    this->y_min = Y_MIN_DESIRED;
+
+    this->desired_x_max = X_MAX_DESIRED;
+    this->desired_y_max = Y_MAX_DESIRED;
+
     this->halfProbs = openImages(z);
 }
 
@@ -136,9 +152,12 @@ float** openImages(int z)
         }
     }
 
-    for (int xblock = 1; xblock < X_BLOCK_MAX; xblock++)
+    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
+    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
+
+    for (int xblock = minXBlock; xblock < X_BLOCK_MAX; xblock++)
     {
-        for (int yblock = 1; yblock < Y_BLOCK_MAX; yblock++)
+        for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
         {
             string filePath = getImageName(z, yblock, xblock);
             ifstream f(filePath.c_str());

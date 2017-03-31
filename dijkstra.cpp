@@ -115,12 +115,17 @@ void Dijkstra::save()
     }
 
     cout << "saving seed assignments...";
-    cv::Mat img(graph.x_max, graph.y_max, CV_8UC1, cv::Scalar(0));
-    for (int x = 0; x < graph.x_max; x++)
+    cv::Mat img(
+            graph.desired_y_max - graph.y_min, 
+            graph.desired_x_max - graph.x_min, 
+            CV_8UC1, 
+            cv::Scalar(seedMap[DEFAULT_SEED]));
+    for (int x = graph.x_min; x < graph.desired_x_max; x++)
     {
-        for (int y = 0; y < graph.y_max; y++)
+        for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
-            img.at<uchar>(cv::Point(x, y)) = seedMap[assignments[x][y]];
+            img.at<uchar>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+                = seedMap[assignments[x][y]];
         }
     }
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
