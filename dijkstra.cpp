@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cilk/cilk.h>
 #include <climits>
+#include <opencv2/opencv.hpp>
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
@@ -102,17 +103,27 @@ void Dijkstra::reconcile(DijkstraThread& thread)
 
 void Dijkstra::save()
 {
+    // map seeds to pixel values
+    auto seeds = getSeeds(graph.z);
+    map<int, int> seedMap;
+    int curPixel = 0;
+    seedMap[DEFAULT_SEED] = curPixel++;
+    for (auto each : *seeds)
+    {
+        seedMap[each.first] = curPixel++;
+        cout << "seed #" << each.first << ", pixelval " << curPixel - 1 << "\n";
+    }
+
     cout << "saving seed assignments...";
-    ofstream output("output_" + to_string(graph.z) + ".txt");
+    cv::Mat img(graph.x_max, graph.y_max, CV_8UC1, cv::Scalar(0));
     for (int x = 0; x < graph.x_max; x++)
     {
         for (int y = 0; y < graph.y_max; y++)
         {
-            output << assignments[x][y] << " ";
+            img.at<uchar>(cv::Point(x, y)) = seedMap[assignments[x][y]];
         }
-        output << "\n";
     }
-    output.close();
+    cv::imwrite("output_" + to_string(graph.z) + ".png", img);
     cout << " done!\n";
 }
 
