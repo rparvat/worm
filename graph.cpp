@@ -15,11 +15,11 @@ static int X_I_MAX = 101631;
 static int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-static int X_MIN_DESIRED = 15000;
-static int X_MAX_DESIRED = 25000;
+static int X_MIN_DESIRED = 13000;
+static int X_MAX_DESIRED = 28000;
 
-static int Y_MIN_DESIRED = 5000;
-static int Y_MAX_DESIRED = 10000;
+static int Y_MIN_DESIRED = 1000;
+static int Y_MAX_DESIRED = 20000;
 
 // these are helpers -- can ignore.
 static int BLOCK_SIZE = 1024;
@@ -146,6 +146,9 @@ float** openImages(int z)
     for (int x = 0; x < X_I_MAX; x++)
     {
         array[x] = new float[Y_I_MAX];
+    }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
         for (int y = 0; y < Y_I_MAX; y++)
         {
             array[x][y] = 100000;

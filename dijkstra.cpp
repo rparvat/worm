@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cilk/cilk.h>
 #include <climits>
+#include <cstdlib>
 #include <opencv2/opencv.hpp>
 
 float DEFAULT_DISTANCE = INT_MAX;
@@ -105,31 +106,52 @@ void Dijkstra::save()
 {
     // map seeds to pixel values
     auto seeds = getSeeds(graph.z);
-    map<int, int> seedMap;
+    map<int, cv::Vec3b> seedMap;
     int curPixel = 0;
-    seedMap[DEFAULT_SEED] = curPixel++;
+    seedMap[DEFAULT_SEED] = cv::Vec3b(0, 0, 0);
     for (auto each : *seeds)
     {
-        seedMap[each.first] = curPixel++;
-        cout << "seed #" << each.first << ", pixelval " << curPixel - 1 << "\n";
+        uint64_t red = rand() % 256;
+        uint64_t green = rand() % 256;
+        uint64_t blue = rand() % 256;
+        seedMap[each.first] = cv::Vec3b(red, green, blue);
     }
 
     cout << "saving seed assignments...";
     cv::Mat img(
             graph.desired_y_max - graph.y_min, 
             graph.desired_x_max - graph.x_min, 
-            CV_8UC1, 
-            cv::Scalar(seedMap[DEFAULT_SEED]));
+            CV_8UC3,
+            seedMap[DEFAULT_SEED]);
     for (int x = graph.x_min; x < graph.desired_x_max; x++)
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
-            img.at<uchar>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+            img.at<cv::Vec3b>(cv::Point(x - graph.x_min, y - graph.y_min)) 
                 = seedMap[assignments[x][y]];
         }
     }
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
-    cout << " done!\n";
+    cout << " done with seed image!\n";
+
+    // now save an image giving distances
+    //
+    cv::Mat dists(
+            graph.desired_y_max - graph.y_min, 
+            graph.desired_x_max - graph.x_min, 
+            CV_32FC1,
+            cv::Scalar(0));
+    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    {
+        for (int y = graph.y_min; y < graph.desired_y_max; y++)
+        {
+            dists.at<float>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+                = finalDists[x][y];
+        }
+    }
+    cv::imwrite("output_" + to_string(graph.z) + "_dists.png", dists);
+    cout << " done with dists image!\n";
+
 }
 
 DijkstraThread::DijkstraThread(int seedNum, Point loc, Dijkstra& original):
