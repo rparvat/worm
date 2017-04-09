@@ -109,21 +109,27 @@ void Dijkstra::save()
     map<int, cv::Vec3b> seedMap;
     int curPixel = 0;
     seedMap[DEFAULT_SEED] = cv::Vec3b(0, 0, 0);
+
+    ofstream colorfile("output_" + to_string(graph.z) + "_colors.txt");
+    colorfile << "seed r g b\n";
     for (auto each : *seeds)
     {
         uint64_t red = rand() % 256;
         uint64_t green = rand() % 256;
         uint64_t blue = rand() % 256;
         seedMap[each.first] = cv::Vec3b(red, green, blue);
+        colorfile << each.first << " " << red << " " << green << " " << blue << "\n";
     }
+    colorfile.close();
 
     cout << "saving seed assignments...";
-    cv::Mat img(
+    cout.flush();
+    cv::Mat& img = *new cv::Mat(
             graph.desired_y_max - graph.y_min, 
             graph.desired_x_max - graph.x_min, 
             CV_8UC3,
             seedMap[DEFAULT_SEED]);
-    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    cilk_for (int x = graph.x_min; x < graph.desired_x_max; x++)
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
@@ -133,10 +139,11 @@ void Dijkstra::save()
     }
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
     cout << " done with seed image!\n";
+    delete(&img);
 
     // now save an image giving distances
     //
-    cv::Mat dists(
+    cv::Mat& dists = *new cv::Mat(
             graph.desired_y_max - graph.y_min, 
             graph.desired_x_max - graph.x_min, 
             CV_32FC1,
@@ -145,12 +152,35 @@ void Dijkstra::save()
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
-            dists.at<float>(cv::Point(x - graph.x_min, y - graph.y_min)) 
-                = finalDists[x][y];
+            float toSave = (finalDists[x][y] == DEFAULT_DISTANCE) ? 0 : finalDists[x][y];
+            dists.at<cv::Scalar>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+                = cv::Scalar(toSave);
         }
     }
+    dists.convertTo(dists, CV_8UC1, 255.0);
     cv::imwrite("output_" + to_string(graph.z) + "_dists.png", dists);
+    delete(&dists);
     cout << " done with dists image!\n";
+
+    cout << "saving EM image now... ";
+    uint8_t** em_vals = openEMImages(graph.z);
+    cv::Mat& em = *new cv::Mat(
+            graph.desired_y_max - graph.y_min,
+            graph.desired_x_max - graph.x_min,
+            CV_8UC1,
+            cv::Scalar(0));
+    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    {
+        for (int y = graph.y_min; y < graph.desired_y_max; y++)
+        {
+            em.at<uint8_t>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+                = em_vals[x][y];
+        }
+    }
+    cv::imwrite("output_" + to_string(graph.z) + "_em.png", em);
+    delete(em_vals);
+    delete(&em);
+    cout << "done!\n";
 
 }
 
@@ -246,7 +276,7 @@ void DijkstraThread::run()
     dijkstra.mtx.unlock();
     updateCount = 0;
 
-    cout << "thread done #" << dijkstra.threadsDone << "! we have " << dijkstra.overwrites << " overwites so far.\n";
+    cout << "thread done #" << dijkstra.threadsDone << "! we have " << dijkstra.overwrites << " overwrites so far.\n";
 }
 
 
@@ -263,7 +293,6 @@ void reconstruct(int z)
     {
         int seed = mapPair.first;
         Point point = mapPair.second;
-        cout << "spawning Dijkstra Thread!\n";
         auto thread = new DijkstraThread(seed, point, dijkstra);
         cilk_spawn thread->run();
     }

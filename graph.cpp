@@ -11,15 +11,19 @@ using namespace std;
 static string worm_path = "/home/heather/worm/";
 
 // these are just the overall dimensions.
-static int X_I_MAX = 101631;
+static int X_I_MAX = 101631 / 2;
 static int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-static int X_MIN_DESIRED = 13000;
-static int X_MAX_DESIRED = 28000;
+static int X_MIN_DESIRED = 0;
+static int X_MAX_DESIRED = X_I_MAX;
+//static int X_MIN_DESIRED = 13000;
+//static int X_MAX_DESIRED = 28000;
 
-static int Y_MIN_DESIRED = 1000;
-static int Y_MAX_DESIRED = 20000;
+static int Y_MIN_DESIRED = 0;
+static int Y_MAX_DESIRED = Y_I_MAX;
+//static int Y_MIN_DESIRED = 1000;
+//static int Y_MAX_DESIRED = 20000;
 
 // these are helpers -- can ignore.
 static int BLOCK_SIZE = 1024;
@@ -39,24 +43,6 @@ string zToString(int z)
 
 Graph::Graph(int zDesired)
 {
-    /*
-    string path = worm_path + "probs_txt/";
-    string filename = "full_z_" + zToString(z) + ".txt";
-    ifstream in(filename, ios_base::in);
-    float** array = new float*[X_MAX];
-    for (int x = 0; x < X_MAX; x++)
-    {
-        array[x] = new float[Y_MAX];
-        for (int y = 0; y < Y_MAX; y++)
-        {
-            int pixel;
-            in >> pixel;
-            array[x][y] = float(pixel) / 256.0 / 2.0;
-        }
-    }
-    this->x_max = X_MAX;
-    this->y_max = Y_MAX;
-    */
     this->z = zDesired;
     this->x_max = X_I_MAX;
     this->y_max = Y_I_MAX;
@@ -147,14 +133,6 @@ float** openImages(int z)
     {
         array[x] = new float[Y_I_MAX];
     }
-    cilk_for (int x = 0; x < X_I_MAX; x++)
-    {
-        for (int y = 0; y < Y_I_MAX; y++)
-        {
-            array[x][y] = 100000;
-        }
-    }
-
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
 
@@ -184,5 +162,60 @@ float** openImages(int z)
     }
     return array;
 }
+
+string getEMImageName(int z, int yem, int xem)
+{
+    string path = worm_path + "EM/";
+    string dirName = to_string(z) + "/";
+    path = path + dirName;
+    string filename = to_string(yem) + "_" 
+        + to_string(xem) + "_"
+        + "1.jpg";
+    return path + filename;
+}
+
+uint8_t** openEMImages(int z)
+{
+    uint8_t** array = new uint8_t*[X_I_MAX];
+    for (int x = 0; x < X_I_MAX; x++)
+    {
+        array[x] = new uint8_t[Y_I_MAX];
+    }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
+        for (int y = 0; y < Y_I_MAX; y++)
+        {
+            array[x][y] = 0;
+        }
+    }
+
+    int EM_BLOCK_SIZE = 512;
+    for (int xem = 0; xem< X_I_MAX / EM_BLOCK_SIZE; xem++)
+    {
+        for (int yem = 0; yem < Y_I_MAX /  EM_BLOCK_SIZE; yem++)
+        {
+            string filePath = getEMImageName(z, yem, xem);
+            ifstream f(filePath.c_str());
+            if (!f.good()) continue;
+
+            cimg_library::CImg<short> image(filePath.c_str());
+            for (int xind = 0; xind < EM_BLOCK_SIZE; xind++)
+            {
+                int x_i = xem * EM_BLOCK_SIZE + xind;
+                for (int yind = 0; yind < EM_BLOCK_SIZE; yind++)
+                {
+                    int y_i = yem * EM_BLOCK_SIZE + yind;
+                    if (image(xind, yind) > 255)
+                    {
+                        cout << image(xind, yind) << "\n";
+                    }
+                    array[x_i][y_i] = image(xind, yind);
+                }
+            }
+        }
+    }
+    return array;
+}
+
 
 

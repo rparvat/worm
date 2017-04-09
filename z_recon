@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function recon {
+    cd output_images;
+    SECONDS=0;
+    echo running $1 >> log;
+    ../worm $1;
+    echo took $SECONDS seconds >> log;
+    echo >> log;
+    cd ..;
+}
+
+recon 502
+recon 503
+recon 504
+recon 505
+recon 506
+recon 507

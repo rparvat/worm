@@ -6,4 +6,5 @@ probs_txt/
 skeleton/
 output_*.txt
 output_*.png
+output_images/
 
