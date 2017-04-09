@@ -18,7 +18,6 @@ class Dijkstra {
         float** finalDists;
         int** assignments;
         Graph& graph;
-        mutex mtx;
         uint64_t overwrites;
         uint64_t threadsDone;
         

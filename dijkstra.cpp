@@ -7,6 +7,7 @@
 #include <climits>
 #include <cstdlib>
 #include <opencv2/opencv.hpp>
+#include <atomic>
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
@@ -48,7 +49,6 @@ map<int, Point>* getSeeds(int desiredZ)
 Dijkstra::Dijkstra(Graph& inputGraph): 
     graph(inputGraph)
 {
-    overwrites = 0;
     threadsDone = 0;
     initArrays();
 }
@@ -94,7 +94,6 @@ void Dijkstra::reconcile(DijkstraThread& thread)
         }
         else if (distance < curFinalDist)
         {
-            overwrites++;
             finalDists[point.first][point.second] = distance;
             assignments[point.first][point.second] = seed;
         }
@@ -242,41 +241,38 @@ void DijkstraThread::run()
             }
         }
         updateCount++;
-        if (updateCount >= UPDATES_PER_RECONCILE && dijkstra.mtx.try_lock())
-        {
-            dijkstra.reconcile(*this);
-            dijkstra.mtx.unlock();
-            updateCount = 0;
-        }
-        else if (updateCount == NEED_TO_RECONCILE)
+        if (updateCount == UPDATES_PER_RECONCILE || distances.size() == 0)
         {
             auto it = toUpdate.begin();
             while (it != toUpdate.end())
             {
                 Point thisPoint = it->first;
                 float thisDistance = it->second;
-                if (this->dijkstra.finalDists[thisPoint.first][thisPoint.second] <= thisDistance)
+                auto curFinalDistance = this->dijkstra.finalDists[thisPoint.first][thisPoint.second];
+                while (curFinalDistance > thisDistance)
                 {
-                    it = toUpdate.erase(it);
+                    if (atomic_compare_exchange_strong(
+                                (atomic<float>*) &(this->dijkstra.finalDists[thisPoint.first][thisPoint.second]),
+                                &curFinalDistance,
+                                thisDistance))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        curFinalDistance = this->dijkstra.finalDists[thisPoint.first][thisPoint.second];
+                    }
                 }
-                else 
-                {
-                    it++;
-                }
+                it++;
             }
-            dijkstra.mtx.lock();
-            dijkstra.reconcile(*this);
-            dijkstra.mtx.unlock();
+            toUpdate.clear();
+            //dijkstra.reconcile(*this);
             updateCount = 0;
         }
     }
-    dijkstra.mtx.lock();
-    dijkstra.reconcile(*this);
     dijkstra.threadsDone++;
-    dijkstra.mtx.unlock();
-    updateCount = 0;
 
-    cout << "thread done #" << dijkstra.threadsDone << "! we have " << dijkstra.overwrites << " overwrites so far.\n";
+    cout << "thread done #" << dijkstra.threadsDone;
 }
 
 
