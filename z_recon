@@ -11,8 +11,8 @@ function recon {
 }
 
 recon 502
-recon 503
-recon 504
-recon 505
-recon 506
-recon 507
+#recon 503
+#recon 504
+#recon 505
+#recon 506
+#recon 507

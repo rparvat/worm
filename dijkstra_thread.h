@@ -24,7 +24,6 @@ class DijkstraThread {
             pairhash> iterators;
         int seed;
         Dijkstra& dijkstra;
-        unordered_map<Point, float, pairhash> toUpdate;
 
         DijkstraThread(int seedNum, Point loc, Dijkstra& original);
         void run();

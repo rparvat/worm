@@ -7,12 +7,9 @@
 #include <climits>
 #include <cstdlib>
 #include <opencv2/opencv.hpp>
-#include <atomic>
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
-int UPDATES_PER_RECONCILE = 30000;
-int NEED_TO_RECONCILE = 100000;
 int MAX_DISTANCE = 100000;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
@@ -73,34 +70,6 @@ void Dijkstra::initArrays()
     }
 }
 
-// MUST HOLD LOCK WHEN CALLING THIS
-void Dijkstra::reconcile(DijkstraThread& thread)
-{
-    auto& distances = thread.distances;
-    auto& iterators = thread.iterators;
-    auto seed = thread.seed;
-    auto& toUpdate = thread.toUpdate;
-
-    for (auto it = toUpdate.begin(); it != toUpdate.end(); it++)
-    {
-        float distance = it->second;
-        Point point = it->first;
-        
-        float curFinalDist = finalDists[point.first][point.second];
-        if (curFinalDist == DEFAULT_DISTANCE)
-        {
-            finalDists[point.first][point.second] = distance;
-            assignments[point.first][point.second] = seed;
-        }
-        else if (distance < curFinalDist)
-        {
-            finalDists[point.first][point.second] = distance;
-            assignments[point.first][point.second] = seed;
-        }
-    }
-    toUpdate.clear();
-}
-
 void Dijkstra::save()
 {
     // map seeds to pixel values
@@ -139,7 +108,6 @@ void Dijkstra::save()
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
     cout << " done with seed image!\n";
     delete(&img);
-
     // now save an image giving distances
     //
     cv::Mat& dists = *new cv::Mat(
@@ -151,7 +119,7 @@ void Dijkstra::save()
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
-            float toSave = (finalDists[x][y] == DEFAULT_DISTANCE) ? 0 : finalDists[x][y];
+            float toSave = (finalDists[x][y] == DEFAULT_DISTANCE) ? float(0.0) : float(finalDists[x][y]);
             dists.at<cv::Scalar>(cv::Point(x - graph.x_min, y - graph.y_min)) 
                 = cv::Scalar(toSave);
         }
@@ -207,10 +175,30 @@ void DijkstraThread::run()
         iterators.erase(point);
 
         float curFinal = this->dijkstra.finalDists[point.first][point.second];
+        if (curFinal <= distance) continue;
 
-        if (curFinal < distance) continue;
-        toUpdate[point] = distance;
+        bool updated = false;
+        while (curFinal > distance)
+        {
+            uint32_t finalUint = __sync_val_compare_and_swap(
+                (uint32_t*) &(this->dijkstra.finalDists[point.first][point.second]),
+                *(uint32_t*)(&curFinal),
+                *(uint32_t*)(&distance));
+            float newFinal = *(float*)(&finalUint);
+            if (newFinal == curFinal)
+            {
+                //TODO: make this atomic!!
+                this->dijkstra.assignments[point.first][point.second] = seed;
+                updated = true;
+                break;
+            }
+            else
+            {
+                curFinal = newFinal;
+            }
+        }
 
+        if (!updated) continue;
         for (Point neighbor: graph.getNeighbors(point))
 
         {
@@ -218,10 +206,7 @@ void DijkstraThread::run()
             float newDistance = distance + graph.getEdgeWeight(point, neighbor);
             if (newDistance > MAX_DISTANCE) continue;
 
-            bool shouldUpdate = (curFinalDist == DEFAULT_DISTANCE)
-                || (newDistance < curFinalDist);
-            shouldUpdate &= (!toUpdate.count(neighbor));
-
+            bool shouldUpdate = (newDistance < curFinalDist);
             if (shouldUpdate && iterators.count(neighbor))
             {
                 it = iterators[neighbor];
@@ -240,42 +225,23 @@ void DijkstraThread::run()
                 iterators[neighbor] = it;
             }
         }
-        updateCount++;
-        if (updateCount == UPDATES_PER_RECONCILE || distances.size() == 0)
-        {
-            auto it = toUpdate.begin();
-            while (it != toUpdate.end())
-            {
-                Point thisPoint = it->first;
-                float thisDistance = it->second;
-                auto curFinalDistance = this->dijkstra.finalDists[thisPoint.first][thisPoint.second];
-                while (curFinalDistance > thisDistance)
-                {
-                    if (atomic_compare_exchange_strong(
-                                (atomic<float>*) &(this->dijkstra.finalDists[thisPoint.first][thisPoint.second]),
-                                &curFinalDistance,
-                                thisDistance))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        curFinalDistance = this->dijkstra.finalDists[thisPoint.first][thisPoint.second];
-                    }
-                }
-                it++;
-            }
-            toUpdate.clear();
-            //dijkstra.reconcile(*this);
-            updateCount = 0;
-        }
     }
     dijkstra.threadsDone++;
 
-    cout << "thread done #" << dijkstra.threadsDone;
+    cout << "thread done #" << dijkstra.threadsDone << "\n";
+    cout.flush();
 }
 
-
+Dijkstra::~Dijkstra()
+{
+    for (auto i = 0; i < graph.x_max; i++)
+    {
+        delete(finalDists[i]);
+        delete(assignments[i]);
+    }
+    delete(finalDists);
+    delete(assignments);
+}
 
 void reconstruct(int z)
 {

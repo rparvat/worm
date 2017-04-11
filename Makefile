@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -std=c++11 #-g
+CFLAGS= -std=c++11 -O3#-g
 LDFLAGS= -L/home/armafire/tools/cilkplus-install/lib64 -lcilkrts -lpthread -lpng -lX11 -I/home/armafire/tools/opencv-3-install-test/include -L/home/armafire/tools/opencv-3-install-test/lib -lopencv_core -lopencv_imgproc -lopencv_imgcodecs
 INCLUDES= -fcilkplus
 DEPS = CImg.h graph.h dijkstra_thread.h dijkstra.h

@@ -30,6 +30,8 @@ static int BLOCK_SIZE = 1024;
 static int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
 static int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
 
+static float DEFAULT_PROBABILITY = 100000;
+
 string zToString(int z) 
 {
     int DEC_SIZE = 6;
@@ -133,6 +135,14 @@ float** openImages(int z)
     {
         array[x] = new float[Y_I_MAX];
     }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
+        for (int y = 0; y < Y_I_MAX; y++)
+        {
+            array[x][y] = DEFAULT_PROBABILITY;
+        }
+    }
+
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
 

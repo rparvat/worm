@@ -3,6 +3,7 @@
 #include "graph.h"
 #include <map>
 #include <mutex>
+#include <atomic>
 
 
 using namespace std;
@@ -24,6 +25,7 @@ class Dijkstra {
         Dijkstra(Graph& inputGraph);
         void reconcile(DijkstraThread& thread);
         void save();
+        ~Dijkstra();
     private:
         void initArrays();
 };
