@@ -39,4 +39,5 @@ int main(int argc, char *argv[]) {
     cout << "!\n";
 
     reconstruct(z, saveSeeds, saveDists);
+    //saveEM(z);
 }

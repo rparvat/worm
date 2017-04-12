@@ -4,7 +4,7 @@ function recon {
     cd output_images;
     SECONDS=0;
     echo running $1 >> log;
-    ../worm $1 0 1;
+    ../worm $1 1 0;
     echo took $SECONDS seconds >> log;
     echo >> log;
     cd ..;
