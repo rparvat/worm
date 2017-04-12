@@ -11,26 +11,26 @@ using namespace std;
 static string worm_path = "/home/heather/worm/";
 
 // these are just the overall dimensions.
-static int X_I_MAX = 101631 / 2;
-static int Y_I_MAX = 45567;
+int X_I_MAX = 101631 / 2;
+int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-static int X_MIN_DESIRED = 0;
-static int X_MAX_DESIRED = X_I_MAX;
+int X_MIN_DESIRED = 0;
+int X_MAX_DESIRED = X_I_MAX;
 //static int X_MIN_DESIRED = 13000;
 //static int X_MAX_DESIRED = 28000;
 
-static int Y_MIN_DESIRED = 0;
-static int Y_MAX_DESIRED = Y_I_MAX;
+int Y_MIN_DESIRED = 0;
+int Y_MAX_DESIRED = Y_I_MAX;
 //static int Y_MIN_DESIRED = 1000;
 //static int Y_MAX_DESIRED = 20000;
 
 // these are helpers -- can ignore.
-static int BLOCK_SIZE = 1024;
-static int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
-static int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
+int BLOCK_SIZE = 1024;
+int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
+int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
 
-static float DEFAULT_PROBABILITY = 100000;
+float DEFAULT_PROBABILITY = 100000;
 
 string zToString(int z) 
 {

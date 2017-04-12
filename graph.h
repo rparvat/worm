@@ -5,6 +5,16 @@
 
 using namespace std;
 
+extern int X_I_MAX, 
+       Y_I_MAX, 
+       X_MIN_DESIRED, 
+       X_MAX_DESIRED, 
+       Y_MIN_DESIRED,
+       Y_MAX_DESIRED,
+       BLOCK_SIZE;
+
+extern float DEFAULT_PROBABILITY;
+
 typedef pair<int, int> Point;
 
 class Graph {

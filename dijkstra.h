@@ -24,7 +24,8 @@ class Dijkstra {
         
         Dijkstra(Graph& inputGraph);
         void reconcile(DijkstraThread& thread);
-        void save();
+        void saveDists();
+        void saveSeeds();
         ~Dijkstra();
     private:
         void initArrays();
@@ -34,4 +35,5 @@ class Dijkstra {
 
 //cimg::CImg<unsigned char> openMembraneIndiv(int z, int y, int x); 
 map<int, Point>* getSeeds(int z);
-void reconstruct(int z);
+void reconstruct(int z, bool saveSeeds, bool saveDists);
+void saveEM(int z);
