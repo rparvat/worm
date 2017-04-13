@@ -10,7 +10,7 @@
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
-int MAX_DISTANCE = 256;
+int MAX_DISTANCE = 64;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
 { 
@@ -108,6 +108,7 @@ void Dijkstra::saveSeeds()
     }
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
     cout << " done with seed image!\n";
+    cout.flush();
     delete(&img);
 }
 
@@ -134,8 +135,39 @@ void Dijkstra::saveDists()
     }
     cv::imwrite("output_" + to_string(graph.z) + "_dists.png", dists);
     cout << " done!\n";
+    cout.flush();
     delete(&dists);
 }
+
+void saveProbs(int z)
+{
+    // now save an image giving distances
+    //
+    Graph graph(z);
+    cout << "saving probs image...";
+    cout.flush();
+    cv::Mat& probs = *new cv::Mat(
+            graph.desired_y_max - graph.y_min, 
+            graph.desired_x_max - graph.x_min, 
+            CV_8UC1,
+            cv::Scalar(0));
+    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    {
+        for (int y = graph.y_min; y < graph.desired_y_max; y++)
+        {
+            uint8_t toSave = (graph.halfProbs[x][y] == DEFAULT_PROBABILITY) ? 0 : 
+                int(roundf(graph.halfProbs[x][y] * 2 * 256));
+            probs.at<uint8_t>(cv::Point(x - graph.x_min, y - graph.y_min)) 
+                = toSave;
+        }
+    }
+    cv::imwrite("output_" + to_string(graph.z) + "_probs.png", probs);
+    cout << " done!\n";
+    cout.flush();
+    delete(&probs);
+}
+
+
 
 void saveEM(int z)
 {
