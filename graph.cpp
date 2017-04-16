@@ -46,15 +46,15 @@ string zToString(int z)
 // edgePower: -1 represents log edge weights
 //            any positive integer represents k^th norm edge weights
 //            all else: undefined
-Graph* Graph::getNewGraph(int z, int edgePower)
+Graph* Graph::getNewGraph(int z, int edgePower, int blur)
 {
-    if (edgePower == -1) return new LogGraph(z);
-    if (edgePower >= 1) return new Graph(z, edgePower);
+    if (edgePower == -1) return new LogGraph(z, blur);
+    if (edgePower >= 1) return new Graph(z, edgePower, blur);
     cout << "UNDEFINED EDGE POWER: " << edgePower  << "\n";
     return nullptr;
 }
 
-Graph::Graph(int zDesired, int edgePower)
+Graph::Graph(int zDesired, int edgePower, int blur)
 {
     cout << "normal graph!!";
     this->z = zDesired;
@@ -67,7 +67,7 @@ Graph::Graph(int zDesired, int edgePower)
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
 
-    this->halfProbs = openImages(z, edgePower);
+    this->halfProbs = openImages(z, edgePower, blur);
 }
 
 Graph::Graph() {};
@@ -117,7 +117,7 @@ Graph::~Graph()
     delete(halfProbs);
 }
 
-LogGraph::LogGraph(int zDesired)
+LogGraph::LogGraph(int zDesired, int blur)
 {
     cout << "log graph!! ";
     this->z = zDesired;
@@ -131,7 +131,7 @@ LogGraph::LogGraph(int zDesired)
     this->desired_y_max = Y_MAX_DESIRED;
 
     // this is the difference!!
-    this->halfProbs = openImagesLog(z);
+    this->halfProbs = openImagesLog(z, blur);
 }
 
 
@@ -165,7 +165,7 @@ string getImageName(int z, int yblock, int xblock)
     return path + filename;
 }
 
-float** openImages(int z, int edgePower)
+float** openImages(int z, int edgePower, int blur)
 {
     float** array = new float*[X_I_MAX];
     for (int x = 0; x < X_I_MAX; x++)
@@ -192,6 +192,7 @@ float** openImages(int z, int edgePower)
             if (!f.good()) continue;
 
             cimg_library::CImg<short> image(filePath.c_str());
+            if (blur) image.blur(float(blur), float(blur), float(0));
             for (int xind = 0; xind < BLOCK_SIZE; xind++)
             {
                 int x_i = (xblock - 1) * BLOCK_SIZE + xind;
@@ -208,7 +209,7 @@ float** openImages(int z, int edgePower)
     return array;
 }
 
-float** openImagesLog(int z)
+float** openImagesLog(int z, int blur)
 {
     float** array = new float*[X_I_MAX];
     for (int x = 0; x < X_I_MAX; x++)
@@ -235,6 +236,7 @@ float** openImagesLog(int z)
             if (!f.good()) continue;
 
             cimg_library::CImg<short> image(filePath.c_str());
+            if (blur) image.blur(float(blur), float(blur), float(0));
             for (int xind = 0; xind < BLOCK_SIZE; xind++)
             {
                 int x_i = (xblock - 1) * BLOCK_SIZE + xind;

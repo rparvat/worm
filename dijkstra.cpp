@@ -81,6 +81,7 @@ void Dijkstra::saveSeeds()
 
     ofstream colorfile("output_colors.txt");
     colorfile << "seed r g b\n";
+    srand(1);
     for (auto each : *seeds)
     {
         uint64_t red = rand() % 256;
@@ -139,11 +140,11 @@ void Dijkstra::saveDists()
     delete(&dists);
 }
 
-void saveProbs(int z)
+void saveProbs(int z, int blur)
 {
     // now save an image giving distances
     //
-    Graph graph(z, 1);
+    Graph& graph = *Graph::getNewGraph(z, 1, blur);
     cout << "saving probs image...";
     cout.flush();
     cv::Mat& probs = *new cv::Mat(
@@ -156,7 +157,7 @@ void saveProbs(int z)
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
             uint8_t toSave = (graph.halfProbs[x][y] == DEFAULT_PROBABILITY) ? 0 : 
-                int(roundf(graph.halfProbs[x][y] * 2 * 256));
+                int(roundf(graph.halfProbs[x][y] * 256));
             probs.at<uint8_t>(cv::Point(x - graph.x_min, y - graph.y_min)) 
                 = toSave;
         }
@@ -289,11 +290,11 @@ Dijkstra::~Dijkstra()
     delete(assignments);
 }
 
-void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower)
+void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur)
 {
     auto seeds = getSeeds(z);
 
-    Graph& graph = *Graph::getNewGraph(z, edgePower);
+    Graph& graph = *Graph::getNewGraph(z, edgePower, blur);
     Dijkstra dijkstra(graph);
     cout << "Dijkstra is initialized\n";
 

@@ -17,6 +17,9 @@ int main(int ac, char* av[])
             ("saveSeeds", po::value<bool>(), "whether to save seed image")
             ("saveDists", po::value<bool>(), "whether to save distance image")
             ("maxDistance", po::value<int>(), "maximum Dijkstra distance allowed")
+            ("blur", po::value<int>(), "size of blurring window used on probability maps (n x n window); 0 means do not blur")
+            ("doSaveProbs", po::value<bool>(), "whether to save new probability image")
+            ("skipRecon", po::value<bool>(), "flag to skip seed reconstruction")
             ;
 
         po::variables_map vm;
@@ -44,47 +47,54 @@ int main(int ac, char* av[])
         int edgePower = 1;
         if (vm.count("edgePower")) {
             edgePower = vm["edgePower"].as<int>();
-            cout << "Edge probability power was set to " 
-                << edgePower << ".\n";
-        } else {
-            if (edgePower == -1)
-            {
-                cout << "Default log probability weightage used.\n";
-            }
-            else
-            {
-                cout << "Default edge probability power of " << edgePower << " used.\n";
-            }
+        }
+        if (edgePower == -1)
+        {
+            cout << "Log probability weightage used.\n";
+        }
+        else
+        {
+            cout << "Edge probability power of " << edgePower << " used.\n";
         }
 
         bool saveSeeds = true;
         if (vm.count("saveSeeds"))
         {
             saveSeeds = vm["saveSeeds"].as<bool>();
-            cout << (saveSeeds ? "" : "not ") << "saving seed image\n";
         }
-        else
-        {
-            cout << "By default " << (saveSeeds ? "" : "not ") << "saving seed image\n";;
-        }
+        cout << (saveSeeds ? "" : "not ") << "saving seed image\n";
 
         bool saveDists = false;
         if (vm.count("saveDists"))
         {
             saveDists = vm["saveDists"].as<bool>();
-            cout << (saveDists ? "" : "not ") << "saving distance image\n";
+        }
+        cout << (saveDists ? "" : "not ") << "saving distance image\n";
+
+        int blur = 0;
+        if (vm.count("blur"))
+        {
+            blur = vm["blur"].as<int>();
+        }
+        if (blur)
+        {
+            cout << "blurring with window size " << blur << "\n";
         }
         else
         {
-            cout << "By default " << (saveDists ? "" : "not ") << "saving distance image\n";;
+            cout << "not blurring\n";
         }
+
 
         if (vm.count("maxDistance"))
         {
             MAX_DISTANCE = vm["maxDistance"].as<int>();
         }
+        cout << "max distance is " << MAX_DISTANCE << "\n";
 
-        reconstruct(z, saveSeeds, saveDists, edgePower);
+        if (!vm.count("skipRecon")) reconstruct(z, saveSeeds, saveDists, edgePower, blur);
+        if (vm.count("doSaveProbs") && vm["doSaveProbs"].as<bool>()) 
+            saveProbs(z, blur);
     }
     catch (exception& e)
     {

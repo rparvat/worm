@@ -36,6 +36,6 @@ class Dijkstra {
 
 //cimg::CImg<unsigned char> openMembraneIndiv(int z, int y, int x); 
 map<int, Point>* getSeeds(int z);
-void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower);
-void saveProbs(int z);
+void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur = 0);
+void saveProbs(int z, int blur);
 void saveEM(int z);

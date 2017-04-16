@@ -26,21 +26,21 @@ class Graph {
     virtual float getEdgeWeight(Point point1, Point point2);
     vector<Point> getNeighbors(Point point);
     Graph();
-    Graph(int z, int edgePower);
+    Graph(int z, int edgePower, int blur);
     ~Graph();
     
-    static Graph* getNewGraph(int z, int edgePower);
+    static Graph* getNewGraph(int z, int edgePower, int blur = 0);
 };
 
 class LogGraph: public Graph {
   public:
     float getEdgeWeight(Point point1, Point point2);
-    LogGraph(int z);
+    LogGraph(int z, int blur);
 };
 
 string getImageName(int z, int yblock, int xblock);
-float** openImages(int z, int edgePower);
-float** openImagesLog(int z);
+float** openImages(int z, int edgePower, int blur);
+float** openImagesLog(int z, int blur);
 uint8_t** openEMImages(int z);
         
 
