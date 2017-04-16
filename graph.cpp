@@ -43,8 +43,20 @@ string zToString(int z)
     return s;
 }
 
-Graph::Graph(int zDesired)
+// edgePower: -1 represents log edge weights
+//            any positive integer represents k^th norm edge weights
+//            all else: undefined
+Graph* Graph::getNewGraph(int z, int edgePower)
 {
+    if (edgePower == -1) return new LogGraph(z);
+    if (edgePower >= 1) return new Graph(z, edgePower);
+    cout << "UNDEFINED EDGE POWER: " << edgePower  << "\n";
+    return nullptr;
+}
+
+Graph::Graph(int zDesired, int edgePower)
+{
+    cout << "normal graph!!";
     this->z = zDesired;
     this->x_max = X_I_MAX;
     this->y_max = Y_I_MAX;
@@ -55,14 +67,15 @@ Graph::Graph(int zDesired)
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
 
-    this->halfProbs = openImages(z);
+    this->halfProbs = openImages(z, edgePower);
 }
+
+Graph::Graph() {};
 
 float Graph::getEdgeWeight(Point point1, Point point2)
 {
-    float probSum = halfProbs[point1.first][point1.second] 
+    return halfProbs[point1.first][point1.second]
         + halfProbs[point2.first][point2.second];
-    return probSum;
 }
 
 vector<Point> Graph::getNeighbors(Point point)
@@ -104,6 +117,30 @@ Graph::~Graph()
     delete(halfProbs);
 }
 
+LogGraph::LogGraph(int zDesired)
+{
+    cout << "log graph!! ";
+    this->z = zDesired;
+    this->x_max = X_I_MAX;
+    this->y_max = Y_I_MAX;
+
+    this->x_min = X_MIN_DESIRED;
+    this->y_min = Y_MIN_DESIRED;
+
+    this->desired_x_max = X_MAX_DESIRED;
+    this->desired_y_max = Y_MAX_DESIRED;
+
+    // this is the difference!!
+    this->halfProbs = openImagesLog(z);
+}
+
+
+float LogGraph::getEdgeWeight(Point point1, Point point2)
+{
+    return halfProbs[point2.first][point2.second];
+}
+
+
 string my_itoa(int i, int d)
 {
     string s = to_string(i);
@@ -128,7 +165,7 @@ string getImageName(int z, int yblock, int xblock)
     return path + filename;
 }
 
-float** openImages(int z)
+float** openImages(int z, int edgePower)
 {
     float** array = new float*[X_I_MAX];
     for (int x = 0; x < X_I_MAX; x++)
@@ -161,17 +198,60 @@ float** openImages(int z)
                 for (int yind = 0; yind < BLOCK_SIZE; yind++)
                 {
                     int y_i = (yblock - 1) * BLOCK_SIZE + yind;
-                    if (image(xind, yind) > 255)
-                    {
-                        cout << image(xind, yind) << "\n";
-                    }
-                    array[x_i][y_i] = float(image(xind, yind)) / 256.0 / 2.0;
+                    array[x_i][y_i] = pow(
+                            float(image(xind, yind) / 256.0),
+                            edgePower);
                 }
             }
         }
     }
     return array;
 }
+
+float** openImagesLog(int z)
+{
+    float** array = new float*[X_I_MAX];
+    for (int x = 0; x < X_I_MAX; x++)
+    {
+        array[x] = new float[Y_I_MAX];
+    }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
+        for (int y = 0; y < Y_I_MAX; y++)
+        {
+            array[x][y] = DEFAULT_PROBABILITY;
+        }
+    }
+
+    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
+    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
+
+    for (int xblock = minXBlock; xblock < X_BLOCK_MAX; xblock++)
+    {
+        for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
+        {
+            string filePath = getImageName(z, yblock, xblock);
+            ifstream f(filePath.c_str());
+            if (!f.good()) continue;
+
+            cimg_library::CImg<short> image(filePath.c_str());
+            for (int xind = 0; xind < BLOCK_SIZE; xind++)
+            {
+                int x_i = (xblock - 1) * BLOCK_SIZE + xind;
+                for (int yind = 0; yind < BLOCK_SIZE; yind++)
+                {
+                    int y_i = (yblock - 1) * BLOCK_SIZE + yind;
+                    array[x_i][y_i] = -float(
+                            log(1.0 - image(xind, yind) / 256.0)
+                            / log(2.0)
+                            );
+                }
+            }
+        }
+    }
+    return array;
+}
+
 
 string getEMImageName(int z, int yem, int xem)
 {

@@ -10,7 +10,7 @@
 
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
-int MAX_DISTANCE = 64;
+int MAX_DISTANCE = 128;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, Point>* getSeeds(int desiredZ)
 { 
@@ -143,7 +143,7 @@ void saveProbs(int z)
 {
     // now save an image giving distances
     //
-    Graph graph(z);
+    Graph graph(z, 1);
     cout << "saving probs image...";
     cout.flush();
     cv::Mat& probs = *new cv::Mat(
@@ -289,11 +289,11 @@ Dijkstra::~Dijkstra()
     delete(assignments);
 }
 
-void reconstruct(int z, bool saveSeeds, bool saveDists)
+void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower)
 {
     auto seeds = getSeeds(z);
 
-    Graph graph(z);
+    Graph& graph = *Graph::getNewGraph(z, edgePower);
     Dijkstra dijkstra(graph);
     cout << "Dijkstra is initialized\n";
 

@@ -4,15 +4,24 @@ function recon {
     cd output_images;
     SECONDS=0;
     echo running $1 >> log;
-    ../worm $1 1 0;
+    ../worm --z $1 --edgePower -1 --saveSeeds 1 --saveDists -1;
     echo took $SECONDS seconds >> log;
     echo >> log;
     cd ..;
 }
 
 recon 502
-#recon 503
-#recon 504
-#recon 505
-#recon 506
-#recon 507
+echo "
+recon 503
+recon 504
+recon 505
+recon 506
+recon 507
+recon 508
+recon 509
+recon 510
+recon 511
+recon 512
+recon 513
+recon 514
+"
