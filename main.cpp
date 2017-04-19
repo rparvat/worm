@@ -18,8 +18,10 @@ int main(int ac, char* av[])
             ("saveDists", po::value<bool>(), "whether to save distance image")
             ("maxDistance", po::value<int>(), "maximum Dijkstra distance allowed")
             ("blur", po::value<int>(), "size of blurring window used on probability maps (n x n window); 0 means do not blur")
-            ("doSaveProbs", po::value<bool>(), "whether to save new probability image")
+            ("saveProbs", po::value<bool>(), "whether to save new probability image")
             ("skipRecon", po::value<bool>(), "flag to skip seed reconstruction")
+            ("saveEM", po::value<bool>(), "whether to save EM image")
+            ("showSeeds", po::value<bool>(), "to show seeds in probs/seeds/em images")
             ;
 
         po::variables_map vm;
@@ -85,6 +87,8 @@ int main(int ac, char* av[])
             cout << "not blurring\n";
         }
 
+        if (vm.count("showSeeds")) SHOW_SEEDS = vm["showSeeds"].as<bool>();
+        if (SHOW_SEEDS) cout << "showing seed localities!\n";
 
         if (vm.count("maxDistance"))
         {
@@ -92,9 +96,27 @@ int main(int ac, char* av[])
         }
         cout << "max distance is " << MAX_DISTANCE << "\n";
 
-        if (!vm.count("skipRecon")) reconstruct(z, saveSeeds, saveDists, edgePower, blur);
-        if (vm.count("doSaveProbs") && vm["doSaveProbs"].as<bool>()) 
+        if (!vm.count("skipRecon") || !vm["skipRecon"].as<bool>()) 
+        {
+            reconstruct(z, saveSeeds, saveDists, edgePower, blur);
+        }
+        else
+        {
+            cout << "skipping recontruction\n";
+        }
+
+        if (vm.count("saveProbs") && vm["saveProbs"].as<bool>()) 
+        {
+            cout << "saving probs image\n";
             saveProbs(z, blur);
+        }
+
+        if (vm.count("saveEM") && vm["saveEM"].as<bool>())
+        {
+            cout << "saving EM image\n";
+            saveEM(z);
+        }
+
     }
     catch (exception& e)
     {

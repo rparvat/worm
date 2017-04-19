@@ -107,10 +107,36 @@ void Dijkstra::saveSeeds()
                 = seedMap[assignments[x][y]];
         }
     }
+
+    if (SHOW_SEEDS)
+    {
+        cv::Vec3b seedVec = cv::Vec3b(255, 255, 255);
+        auto newSeeds = getSeeds(graph.z);
+        for (auto each : *newSeeds)
+        {
+            Point point = each.second;
+            auto x = point.first;
+            auto y = point.second;
+            for (auto i = max(graph.x_min, x - SEED_RADIUS); 
+                    i <= min(x + SEED_RADIUS, graph.desired_x_max - 1);
+                    i++)
+            {
+                for (auto j = max(graph.y_min, y - SEED_RADIUS); 
+                        j <= min(y + SEED_RADIUS, graph.desired_y_max - 1); 
+                        j++)
+                {
+                    img.at<cv::Vec3b>(cv::Point(i - graph.x_min, j - graph.y_min))
+                        = seedVec;
+                }
+            }
+        }
+        delete(newSeeds);
+    }
     cv::imwrite("output_" + to_string(graph.z) + ".png", img);
     cout << " done with seed image!\n";
     cout.flush();
     delete(&img);
+    delete(seeds);
 }
 
 void Dijkstra::saveDists()
@@ -162,13 +188,35 @@ void saveProbs(int z, int blur)
                 = toSave;
         }
     }
+    if (SHOW_SEEDS)
+    {
+        auto newSeeds = getSeeds(graph.z);
+        uint8_t seedInt = 255;
+        for (auto each : *newSeeds)
+        {
+            Point point = each.second;
+            auto x = point.first;
+            auto y = point.second;
+            for (auto i = max(graph.x_min, x - SEED_RADIUS); 
+                    i <= min(x + SEED_RADIUS, graph.desired_x_max - 1);
+                    i++)
+            {
+                for (auto j = max(graph.y_min, y - SEED_RADIUS); 
+                        j <= min(y + SEED_RADIUS, graph.desired_y_max - 1); 
+                        j++)
+                {
+                    probs.at<uint8_t>(cv::Point(i - graph.x_min, j - graph.y_min))
+                        = seedInt;
+                }
+            }
+        }
+        delete(newSeeds);
+    }
     cv::imwrite("output_" + to_string(graph.z) + "_probs.png", probs);
     cout << " done!\n";
     cout.flush();
     delete(&probs);
 }
-
-
 
 void saveEM(int z)
 {
@@ -187,6 +235,32 @@ void saveEM(int z)
                 = em_vals[x][y];
         }
     }
+
+    if (SHOW_SEEDS)
+    {
+        auto newSeeds = getSeeds(z);
+        uint8_t seedInt = 0;
+        for (auto each : *newSeeds)
+        {
+            Point point = each.second;
+            auto x = point.first;
+            auto y = point.second;
+            for (auto i = max(X_MIN_DESIRED, x - SEED_RADIUS); 
+                    i <= min(x + SEED_RADIUS, X_MIN_DESIRED - 1);
+                    i++)
+            {
+                for (auto j = max(Y_MIN_DESIRED, y - SEED_RADIUS); 
+                        j <= min(y + SEED_RADIUS, Y_MAX_DESIRED - 1); 
+                        j++)
+                {
+                    em.at<uint8_t>(cv::Point(i - X_MIN_DESIRED, j - Y_MIN_DESIRED))
+                        = seedInt;
+                }
+            }
+        }
+        delete(newSeeds);
+    }
+
     cv::imwrite("output_" + to_string(z) + "_em.png", em);
     for (auto i = 0; i < X_MAX_DESIRED; i++)
     {

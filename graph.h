@@ -12,7 +12,10 @@ extern int X_I_MAX,
        X_MAX_DESIRED, 
        Y_MIN_DESIRED,
        Y_MAX_DESIRED,
-       BLOCK_SIZE;
+       BLOCK_SIZE,
+       SEED_RADIUS;
+
+extern bool SHOW_SEEDS;
 
 extern float DEFAULT_PROBABILITY;
 

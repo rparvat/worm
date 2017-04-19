@@ -27,8 +27,10 @@ int Y_MAX_DESIRED = Y_I_MAX / 12 * 2;//Y_I_MAX;
 
 // these are helpers -- can ignore.
 int BLOCK_SIZE = 1024;
-int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
-int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
+int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE;
+int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE;
+
+bool SHOW_SEEDS = true;
 
 int SEED_RADIUS = 7;
 
@@ -200,12 +202,12 @@ float** openImages(int z, int edgePower, int blur)
         }
     }
 
-    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
-    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
+    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
+    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
 
-    for (int xblock = minXBlock; xblock < X_BLOCK_MAX; xblock++)
+    for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {
-        for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
+        for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
         {
             string filePath = getImageName(z, yblock, xblock);
             ifstream f(filePath.c_str());
@@ -215,10 +217,10 @@ float** openImages(int z, int edgePower, int blur)
             if (blur) image.blur(float(blur), float(blur), float(0));
             for (int xind = 0; xind < BLOCK_SIZE; xind++)
             {
-                int x_i = (xblock - 1) * BLOCK_SIZE + xind;
+                int x_i = (xblock) * BLOCK_SIZE + xind;
                 for (int yind = 0; yind < BLOCK_SIZE; yind++)
                 {
-                    int y_i = (yblock - 1) * BLOCK_SIZE + yind;
+                    int y_i = (yblock) * BLOCK_SIZE + yind;
                     array[x_i][y_i] = pow(
                             float(image(xind, yind) / 256.0),
                             edgePower);
@@ -244,12 +246,12 @@ float** openImagesLog(int z, int blur)
         }
     }
 
-    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE + 1;
-    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE + 1;
+    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
+    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
 
-    for (int xblock = minXBlock; xblock < X_BLOCK_MAX; xblock++)
+    for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {
-        for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
+        for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
         {
             string filePath = getImageName(z, yblock, xblock);
             ifstream f(filePath.c_str());
@@ -259,10 +261,10 @@ float** openImagesLog(int z, int blur)
             if (blur) image.blur(float(blur), float(blur), float(0));
             for (int xind = 0; xind < BLOCK_SIZE; xind++)
             {
-                int x_i = (xblock - 1) * BLOCK_SIZE + xind;
+                int x_i = (xblock) * BLOCK_SIZE + xind;
                 for (int yind = 0; yind < BLOCK_SIZE; yind++)
                 {
-                    int y_i = (yblock - 1) * BLOCK_SIZE + yind;
+                    int y_i = (yblock) * BLOCK_SIZE + yind;
                     array[x_i][y_i] = -float(
                             log(1.0 - image(xind, yind) / 256.0)
                             / log(2.0)
@@ -302,9 +304,9 @@ uint8_t** openEMImages(int z)
     }
 
     int EM_BLOCK_SIZE = 512;
-    for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE; xem++)
+    for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE + 1; xem++)
     {
-        for (int yem = Y_MIN_DESIRED / EM_BLOCK_SIZE; yem < Y_MAX_DESIRED / EM_BLOCK_SIZE; yem++)
+        for (int yem = Y_MIN_DESIRED / EM_BLOCK_SIZE; yem < Y_MAX_DESIRED / EM_BLOCK_SIZE + 1; yem++)
         {
             string filePath = getEMImageName(z, yem, xem);
             ifstream f(filePath.c_str());
@@ -317,10 +319,6 @@ uint8_t** openEMImages(int z)
                 for (int yind = 0; yind < EM_BLOCK_SIZE; yind++)
                 {
                     int y_i = yem * EM_BLOCK_SIZE + yind;
-                    if (image(xind, yind) > 255)
-                    {
-                        cout << image(xind, yind) << "\n";
-                    }
                     array[x_i][y_i] = image(xind, yind);
                 }
             }
