@@ -15,13 +15,13 @@ int X_I_MAX = 101631 / 2;
 int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-int X_MIN_DESIRED = 0;
-int X_MAX_DESIRED = X_I_MAX;
+int X_MIN_DESIRED = X_I_MAX / 5 * 2;//0;
+int X_MAX_DESIRED = X_I_MAX / 5 * 3;//X_I_MAX;
 //static int X_MIN_DESIRED = 13000;
 //static int X_MAX_DESIRED = 28000;
 
-int Y_MIN_DESIRED = 0;
-int Y_MAX_DESIRED = Y_I_MAX;
+int Y_MIN_DESIRED = Y_I_MAX / 12;//0;
+int Y_MAX_DESIRED = Y_I_MAX / 12 * 2;//Y_I_MAX;
 //static int Y_MIN_DESIRED = 1000;
 //static int Y_MAX_DESIRED = 20000;
 
@@ -302,9 +302,9 @@ uint8_t** openEMImages(int z)
     }
 
     int EM_BLOCK_SIZE = 512;
-    for (int xem = 0; xem< X_I_MAX / EM_BLOCK_SIZE; xem++)
+    for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE; xem++)
     {
-        for (int yem = 0; yem < Y_I_MAX /  EM_BLOCK_SIZE; yem++)
+        for (int yem = Y_MIN_DESIRED / EM_BLOCK_SIZE; yem < Y_MAX_DESIRED / EM_BLOCK_SIZE; yem++)
         {
             string filePath = getEMImageName(z, yem, xem);
             ifstream f(filePath.c_str());
