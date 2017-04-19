@@ -30,6 +30,8 @@ int BLOCK_SIZE = 1024;
 int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE + 1;
 int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE + 1;
 
+int SEED_RADIUS = 7;
+
 float DEFAULT_PROBABILITY = 100000;
 
 string zToString(int z) 
@@ -105,6 +107,24 @@ vector<Point> Graph::getNeighbors(Point point)
         if (!yTooHigh) neighbors.push_back((Point(x + 1, y + 1)));
     }
     return neighbors;
+}
+
+void Graph::zeroSeeds(map<int, Point> seeds)
+{
+    for (auto& mapPair : seeds)
+    {
+        Point point = mapPair.second;
+        auto x = point.first;
+        auto y = point.second;
+
+        for (auto i = x - SEED_RADIUS; i <= x + SEED_RADIUS; i++)
+        {
+            for (auto j = y - SEED_RADIUS; j <= y + SEED_RADIUS; j++)
+            {
+                halfProbs[i][j] = 0;
+            }
+        }
+    }
 }
 
 

@@ -294,7 +294,11 @@ void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur)
 {
     auto seeds = getSeeds(z);
 
+    // prepare the graph, and zero out areas around seeds
     Graph& graph = *Graph::getNewGraph(z, edgePower, blur);
+    graph.zeroSeeds(*seeds);
+
+    // initialize and run dijsktra
     Dijkstra dijkstra(graph);
     cout << "Dijkstra is initialized\n";
 
