@@ -15,7 +15,8 @@ extern int X_I_MAX,
        BLOCK_SIZE,
        SEED_RADIUS;
 
-extern bool SHOW_SEEDS;
+extern bool SHOW_SEEDS, 
+       USE_ALTERNATE;
 
 extern float DEFAULT_PROBABILITY;
 
@@ -45,7 +46,9 @@ class LogGraph: public Graph {
 
 string getImageName(int z, int yblock, int xblock);
 float** openImages(int z, int edgePower, int blur);
+float** alternateOpenImages(int z, int edgePower, int blur);
 float** openImagesLog(int z, int blur);
+float** alternateOpenImagesLog(int z, int blur);
 uint8_t** openEMImages(int z);
         
 

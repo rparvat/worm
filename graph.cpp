@@ -15,13 +15,17 @@ int X_I_MAX = 101631 / 2;
 int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-int X_MIN_DESIRED = X_I_MAX / 5 * 2;//0;
-int X_MAX_DESIRED = X_I_MAX / 5 * 3;//X_I_MAX;
+int X_MIN_DESIRED = 18000; //X_I_MAX / 5 * 2;//0;
+int X_MAX_DESIRED = 24500; //X_I_MAX / 5 * 3;//X_I_MAX;
+//int X_MIN_DESIRED = 0;
+//int X_MAX_DESIRED = X_I_MAX;
 //static int X_MIN_DESIRED = 13000;
 //static int X_MAX_DESIRED = 28000;
 
-int Y_MIN_DESIRED = Y_I_MAX / 12;//0;
-int Y_MAX_DESIRED = Y_I_MAX / 12 * 2;//Y_I_MAX;
+int Y_MIN_DESIRED = 1750; //Y_I_MAX / 12;//0;
+int Y_MAX_DESIRED = 7000; //Y_I_MAX / 12 * 2;//Y_I_MAX;
+//int Y_MIN_DESIRED = 0;
+//int Y_MAX_DESIRED = Y_I_MAX;
 //static int Y_MIN_DESIRED = 1000;
 //static int Y_MAX_DESIRED = 20000;
 
@@ -31,6 +35,7 @@ int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE;
 int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE;
 
 bool SHOW_SEEDS = true;
+bool USE_ALTERNATE = false;
 
 int SEED_RADIUS = 7;
 
@@ -71,7 +76,14 @@ Graph::Graph(int zDesired, int edgePower, int blur)
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
 
-    this->halfProbs = openImages(z, edgePower, blur);
+    if (USE_ALTERNATE)
+    {
+        this->halfProbs = alternateOpenImages(z, edgePower, blur);
+    }
+    else
+    {
+        this->halfProbs = openImages(z, edgePower, blur);
+    }
 }
 
 Graph::Graph() {};
@@ -153,7 +165,14 @@ LogGraph::LogGraph(int zDesired, int blur)
     this->desired_y_max = Y_MAX_DESIRED;
 
     // this is the difference!!
-    this->halfProbs = openImagesLog(z, blur);
+    if (USE_ALTERNATE)
+    {
+        this->halfProbs = alternateOpenImagesLog(z, blur);
+    }
+    else
+    {
+        this->halfProbs = openImagesLog(z, blur);
+    }
 }
 
 
@@ -271,6 +290,117 @@ float** openImagesLog(int z, int blur)
                             );
                 }
             }
+        }
+    }
+    return array;
+}
+
+float** alternateOpenImages(int z, int edgePower, int blur)
+{
+    float** array = new float*[X_I_MAX];
+    for (int x = 0; x < X_I_MAX; x++)
+    {
+        array[x] = new float[Y_I_MAX];
+    }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
+        for (int y = 0; y < Y_I_MAX; y++)
+        {
+            array[x][y] = DEFAULT_PROBABILITY;
+        }
+    }
+
+    cout << "about to open alternate image\n";
+    cout.flush();
+
+    string imageName = "/home/rajeev/tile_output/" + to_string(z) + "_probs.png";
+    ifstream f(imageName.c_str());
+    if (!f.good()) cout << "THERE IS NO TILE OUTPUT HERE!!!!\n";
+    cimg_library::CImg<short> image(imageName.c_str());
+
+    int boundary = 110;
+
+    int min_x = max(X_MIN_DESIRED, boundary);
+    int max_x = min(X_MAX_DESIRED, 33800);
+    int min_y = max(Y_MIN_DESIRED, boundary);
+    int max_y = min(Y_MAX_DESIRED, 22600);
+
+    image.crop(min_x - boundary, 
+            min_y - boundary, 
+            0, 0, 
+            max_x - boundary, 
+            max_y - boundary, 
+            0, 0);
+    if (blur) image.blur(float(blur), float(blur), float(0));
+    cout << "done blurring images\n";
+    cout.flush();
+
+    for (int x_ind = 0; x_ind < max_x - min_x; x_ind++)
+    {
+        int x_i = x_ind + min_x;
+        for (int y_ind = 0; y_ind < max_y - min_y; y_ind++)
+        {
+            int y_i = y_ind + min_y;
+            array[x_i][y_i] = pow(
+                    float(image(x_ind, y_ind) / 256.0),
+                    edgePower);
+        }
+    }
+    return array;
+}
+
+
+float** alternateOpenImagesLog(int z, int blur)
+{
+    float** array = new float*[X_I_MAX];
+    for (int x = 0; x < X_I_MAX; x++)
+    {
+        array[x] = new float[Y_I_MAX];
+    }
+    cilk_for (int x = 0; x < X_I_MAX; x++)
+    {
+        for (int y = 0; y < Y_I_MAX; y++)
+        {
+            array[x][y] = DEFAULT_PROBABILITY;
+        }
+    }
+
+    cout << "about to open alternate image\n";
+    cout.flush();
+
+    string imageName = "/home/rajeev/tile_output/" + to_string(z) + "_probs.png";
+    ifstream f(imageName.c_str());
+    if (!f.good()) cout << "THERE IS NO TILE OUTPUT HERE!!!!\n";
+    cimg_library::CImg<short> image(imageName.c_str());
+
+    int boundary = 110;
+
+    int min_x = max(X_MIN_DESIRED, boundary);
+    int max_x = min(X_MAX_DESIRED, 33800);
+    int min_y = max(Y_MIN_DESIRED, boundary);
+    int max_y = min(Y_MAX_DESIRED, 22600);
+
+    image.crop(min_x - boundary, 
+            min_y - boundary, 
+            0, 0, 
+            max_x - boundary, 
+            max_y - boundary, 
+            0, 0);
+    if (blur) image.blur(float(blur), float(blur), float(0));
+    cout << "done blurring images\n";
+    cout.flush();
+
+    for (int x_ind = 0; x_ind < max_x - min_x; x_ind++)
+    {
+        int x_i = x_ind + min_x;
+        for (int y_ind = 0; y_ind < max_y - min_y; y_ind++)
+        {
+            int y_i = y_ind + min_y;
+            auto imagePixel = image(x_ind, y_ind);
+            array[x_i][y_i] = -float(
+                    log(1.0 - imagePixel / 256.0)
+                    / log(2.0)
+                    );
         }
     }
     return array;

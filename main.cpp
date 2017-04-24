@@ -22,6 +22,7 @@ int main(int ac, char* av[])
             ("skipRecon", po::value<bool>(), "flag to skip seed reconstruction")
             ("saveEM", po::value<bool>(), "whether to save EM image")
             ("showSeeds", po::value<bool>(), "to show seeds in probs/seeds/em images")
+            ("useAlternate", po::value<bool>(), "whether to use the alternate probs")
             ;
 
         po::variables_map vm;
@@ -89,6 +90,9 @@ int main(int ac, char* av[])
 
         if (vm.count("showSeeds")) SHOW_SEEDS = vm["showSeeds"].as<bool>();
         if (SHOW_SEEDS) cout << "showing seed localities!\n";
+
+        USE_ALTERNATE = vm.count("useAlternate") && vm["useAlternate"].as<bool>();
+        if (USE_ALTERNATE) cout << "using alternate probs images!!!\n";
 
         if (vm.count("maxDistance"))
         {
