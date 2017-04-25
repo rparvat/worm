@@ -52,6 +52,20 @@ string zToString(int z)
     return s;
 }
 
+vector<Point> condenseSeeds(map<int, vector<Point>>* seeds)
+{
+    vector<Point> allPoints;
+    for (auto pair : *seeds)
+    {
+        for (Point point : pair.second)
+        {
+            allPoints.push_back(point);
+        }
+    }
+    return allPoints;
+}
+    
+
 // edgePower: -1 represents log edge weights
 //            any positive integer represents k^th norm edge weights
 //            all else: undefined
@@ -123,11 +137,11 @@ vector<Point> Graph::getNeighbors(Point point)
     return neighbors;
 }
 
-void Graph::zeroSeeds(map<int, Point> seeds)
+void Graph::zeroSeeds(map<int, vector<Point>> seeds)
 {
-    for (auto& mapPair : seeds)
+    auto allPoints = condenseSeeds(&seeds);
+    for (auto point : allPoints)
     {
-        Point point = mapPair.second;
         auto x = point.first;
         auto y = point.second;
 

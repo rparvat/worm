@@ -32,7 +32,7 @@ class Graph {
     vector<Point> getNeighbors(Point point);
     Graph();
     Graph(int z, int edgePower, int blur);
-    void zeroSeeds(map<int, Point> seeds);
+    void zeroSeeds(map<int, vector<Point>> seeds);
     ~Graph();
     
     static Graph* getNewGraph(int z, int edgePower, int blur = 0);
@@ -44,6 +44,7 @@ class LogGraph: public Graph {
     LogGraph(int z, int blur);
 };
 
+vector<Point> condenseSeeds(map<int, vector<Point>>* seeds);
 string getImageName(int z, int yblock, int xblock);
 float** openImages(int z, int edgePower, int blur);
 float** alternateOpenImages(int z, int edgePower, int blur);

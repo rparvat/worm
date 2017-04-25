@@ -25,7 +25,7 @@ class DijkstraThread {
         int seed;
         Dijkstra& dijkstra;
 
-        DijkstraThread(int seedNum, Point loc, Dijkstra& original);
+        DijkstraThread(int seedNum, vector<Point> points, Dijkstra& original);
         void run();
 };
 

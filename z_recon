@@ -4,7 +4,7 @@ function recon {
     cd output_images;
     SECONDS=0;
     echo running $1 >> log;
-    ../worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists true --maxDistance 80 --blur 7 --saveProbs true --showSeeds true;
+    ../worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists true --maxDistance 50 --blur 7 --saveProbs true --showSeeds true;
     echo took $SECONDS seconds >> log;
     echo >> log;
     cd ..;

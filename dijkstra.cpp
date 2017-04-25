@@ -12,7 +12,7 @@ float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
 int MAX_DISTANCE = 128;
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
-map<int, Point>* getSeeds(int desiredZ)
+map<int, vector<Point>>* getSeeds(int desiredZ)
 { 
     // assuming the input is ID X Y Z
     // and top of input has number of things
@@ -20,10 +20,12 @@ map<int, Point>* getSeeds(int desiredZ)
     string filename = "/home/rajeev/worm/skeleton/seeds.txt";
     ifstream in(filename, ios_base::in);
     
-    auto seeds = new map<int, pair<int, int>>();
+    auto seeds = new map<int, vector<pair<int, int>>>();
     int numSeeds;
 
     in >> numSeeds;
+
+    int count = 0;
     for (int i = 0; i < numSeeds; i++)
     {
         int seed, x, y, z;
@@ -34,12 +36,12 @@ map<int, Point>* getSeeds(int desiredZ)
         if (desiredZ == z || desiredZ == -1)
         {
             pair<int, int> tup(x, y);
-            seeds->insert(pair<int, Point>(seed, tup));
-            //(*seeds)[seed] = tup;
+            (*seeds)[seed].push_back(tup);
+            count++;
         }
     }
-    cout << "done!";
-    if (desiredZ != -1) cout << " There are " << seeds->size() << " seeds for this z.";
+    cout << "done! There are " << count << " seeds";
+    if (desiredZ != -1) cout << " for this z.";
     cout << "\n";
     return seeds;
 }
@@ -82,6 +84,8 @@ void Dijkstra::saveSeeds()
     ofstream colorfile("output_colors.txt");
     colorfile << "seed r g b\n";
     srand(1);
+    // only using the cell ids for this, so don't need to
+    //      iterate over the vectors
     for (auto each : *seeds)
     {
         uint64_t red = rand() % 256;
@@ -110,11 +114,12 @@ void Dijkstra::saveSeeds()
 
     if (SHOW_SEEDS)
     {
-        cv::Vec3b seedVec = cv::Vec3b(255, 255, 255);
         auto newSeeds = getSeeds(graph.z);
-        for (auto each : *newSeeds)
+        auto allPoints = condenseSeeds(newSeeds);
+
+        cv::Vec3b seedVec = cv::Vec3b(255, 255, 255);
+        for (auto point : allPoints)
         {
-            Point point = each.second;
             auto x = point.first;
             auto y = point.second;
             for (auto i = max(graph.x_min, x - SEED_RADIUS); 
@@ -191,10 +196,11 @@ void saveProbs(int z, int blur)
     if (SHOW_SEEDS)
     {
         auto newSeeds = getSeeds(graph.z);
+        auto allPoints = condenseSeeds(newSeeds);
+
         uint8_t seedInt = 255;
-        for (auto each : *newSeeds)
+        for (auto point : allPoints)
         {
-            Point point = each.second;
             auto x = point.first;
             auto y = point.second;
             for (auto i = max(graph.x_min, x - SEED_RADIUS); 
@@ -236,31 +242,6 @@ void saveEM(int z)
         }
     }
 
-    if (SHOW_SEEDS)
-    {
-        auto newSeeds = getSeeds(z);
-        uint8_t seedInt = 0;
-        for (auto each : *newSeeds)
-        {
-            Point point = each.second;
-            auto x = point.first;
-            auto y = point.second;
-            for (auto i = max(X_MIN_DESIRED, x - SEED_RADIUS); 
-                    i <= min(x + SEED_RADIUS, X_MIN_DESIRED - 1);
-                    i++)
-            {
-                for (auto j = max(Y_MIN_DESIRED, y - SEED_RADIUS); 
-                        j <= min(y + SEED_RADIUS, Y_MAX_DESIRED - 1); 
-                        j++)
-                {
-                    em.at<uint8_t>(cv::Point(i - X_MIN_DESIRED, j - Y_MIN_DESIRED))
-                        = seedInt;
-                }
-            }
-        }
-        delete(newSeeds);
-    }
-
     cv::imwrite("output_" + to_string(z) + "_em.png", em);
     for (auto i = 0; i < X_MAX_DESIRED; i++)
     {
@@ -272,13 +253,15 @@ void saveEM(int z)
 
 }
 
-DijkstraThread::DijkstraThread(int seedNum, Point loc, Dijkstra& original):
+DijkstraThread::DijkstraThread(int seedNum, vector<Point> points, Dijkstra& original):
     dijkstra(original)
 {
     seed = seedNum;
-
-    auto it = distances.emplace(float(0.0), loc);
-    iterators[loc] = it;
+    for (auto loc : points)
+    {
+        auto it = distances.emplace(float(0.0), loc);
+        iterators[loc] = it;
+    }
 }
 
 void DijkstraThread::run()
@@ -379,8 +362,7 @@ void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur)
     for (auto& mapPair : *seeds)
     {
         int seed = mapPair.first;
-        Point point = mapPair.second;
-        auto thread = new DijkstraThread(seed, point, dijkstra);
+        auto thread = new DijkstraThread(seed, mapPair.second, dijkstra);
         cilk_spawn thread->run();
     }
     cilk_sync;
