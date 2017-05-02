@@ -11,13 +11,17 @@
 float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
 int MAX_DISTANCE = 128;
+
+static map<Point, int> radii;
+
+static string OUTPUT_PATH = "/mnt/disk7/rajeev/";
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, vector<Point>>* getSeeds(int desiredZ)
 { 
     // assuming the input is ID X Y Z
     // and top of input has number of things
     cout << "getting seeds... ";
-    string filename = "/home/rajeev/worm/skeleton/seeds.txt";
+    string filename = "/home/rajeev/worm/skeleton/new_seeds.txt";
     ifstream in(filename, ios_base::in);
     
     auto seeds = new map<int, vector<pair<int, int>>>();
@@ -28,16 +32,22 @@ map<int, vector<Point>>* getSeeds(int desiredZ)
     int count = 0;
     for (int i = 0; i < numSeeds; i++)
     {
-        int seed, x, y, z;
+        int seed, x, y, z, radius;
         in >> seed;
         in >> x;
         in >> y;
         in >> z;
+        in >> radius;
+
+        pair<int, int> tup(x, y);
         if (desiredZ == z || desiredZ == -1)
         {
-            pair<int, int> tup(x, y);
             (*seeds)[seed].push_back(tup);
             count++;
+        }
+        if (desiredZ == z)
+        {
+            radii[tup] = radius;
         }
     }
     cout << "done! There are " << count << " seeds";
@@ -81,7 +91,8 @@ void Dijkstra::saveSeeds()
     map<int, cv::Vec3b> seedMap;
     seedMap[DEFAULT_SEED] = cv::Vec3b(0, 0, 0);
 
-    ofstream colorfile("output_colors.txt");
+    string colorPath = OUTPUT_PATH;
+    ofstream colorfile(colorPath + "output_colors.txt");
     colorfile << "seed r g b\n";
     srand(1);
     // only using the cell ids for this, so don't need to
@@ -122,22 +133,26 @@ void Dijkstra::saveSeeds()
         {
             auto x = point.first;
             auto y = point.second;
-            for (auto i = max(graph.x_min, x - SEED_RADIUS); 
-                    i <= min(x + SEED_RADIUS, graph.desired_x_max - 1);
+            auto radius = radii[point];
+            for (auto i = max(graph.x_min, x - radius); 
+                    i <= min(x + radius, graph.desired_x_max - 1);
                     i++)
             {
-                for (auto j = max(graph.y_min, y - SEED_RADIUS); 
-                        j <= min(y + SEED_RADIUS, graph.desired_y_max - 1); 
+                for (auto j = max(graph.y_min, y - radius); 
+                        j <= min(y + radius, graph.desired_y_max - 1); 
                         j++)
                 {
-                    img.at<cv::Vec3b>(cv::Point(i - graph.x_min, j - graph.y_min))
-                        = seedVec;
+                    if (sqrt((i-x)*(i-x) + (j-y)*(j-y)) <= radius)
+                    {
+                        img.at<cv::Vec3b>(cv::Point(i - graph.x_min, j - graph.y_min))
+                            = seedVec;
+                    }
                 }
             }
         }
         delete(newSeeds);
     }
-    cv::imwrite("output_" + to_string(graph.z) + ".png", img);
+    cv::imwrite(OUTPUT_PATH + "output_" + to_string(graph.z) + ".png", img);
     cout << " done with seed image!\n";
     cout.flush();
     delete(&img);
@@ -155,7 +170,7 @@ void Dijkstra::saveDists()
             graph.desired_x_max - graph.x_min, 
             CV_8UC1,
             cv::Scalar(0));
-    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    cilk_for (int x = graph.x_min; x < graph.desired_x_max; x++)
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
@@ -165,7 +180,7 @@ void Dijkstra::saveDists()
                 = toSave;
         }
     }
-    cv::imwrite("output_" + to_string(graph.z) + "_dists.png", dists);
+    cv::imwrite(OUTPUT_PATH + "output_" + to_string(graph.z) + "_dists.png", dists);
     cout << " done!\n";
     cout.flush();
     delete(&dists);
@@ -183,7 +198,7 @@ void saveProbs(int z, int blur)
             graph.desired_x_max - graph.x_min, 
             CV_8UC1,
             cv::Scalar(0));
-    for (int x = graph.x_min; x < graph.desired_x_max; x++)
+    cilk_for (int x = graph.x_min; x < graph.desired_x_max; x++)
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
@@ -203,22 +218,27 @@ void saveProbs(int z, int blur)
         {
             auto x = point.first;
             auto y = point.second;
-            for (auto i = max(graph.x_min, x - SEED_RADIUS); 
-                    i <= min(x + SEED_RADIUS, graph.desired_x_max - 1);
+            auto radius = radii[point];
+            for (auto i = max(graph.x_min, x - radius); 
+                    i <= min(x + radius, graph.desired_x_max - 1);
                     i++)
             {
-                for (auto j = max(graph.y_min, y - SEED_RADIUS); 
-                        j <= min(y + SEED_RADIUS, graph.desired_y_max - 1); 
+                for (auto j = max(graph.y_min, y - radius); 
+                        j <= min(y + radius, graph.desired_y_max - 1); 
                         j++)
                 {
-                    probs.at<uint8_t>(cv::Point(i - graph.x_min, j - graph.y_min))
-                        = seedInt;
+                    if (sqrt((i-x)*(i-x) + (j-y)*(j-y)) <= radius)
+                    {
+                        probs.at<uint8_t>(cv::Point(i - graph.x_min, j - graph.y_min))
+                            = seedInt;
+                    }
+
                 }
             }
         }
         delete(newSeeds);
     }
-    cv::imwrite("output_" + to_string(graph.z) + "_probs.png", probs);
+    cv::imwrite(OUTPUT_PATH + "output_" + to_string(graph.z) + "_probs.png", probs);
     cout << " done!\n";
     cout.flush();
     delete(&probs);
@@ -242,7 +262,7 @@ void saveEM(int z)
         }
     }
 
-    cv::imwrite("output_" + to_string(z) + "_em.png", em);
+    cv::imwrite(OUTPUT_PATH + "output_" + to_string(z) + "_em.png", em);
     for (auto i = 0; i < X_MAX_DESIRED; i++)
     {
         delete(em_vals[i]);
@@ -338,7 +358,7 @@ void DijkstraThread::run()
 
 Dijkstra::~Dijkstra()
 {
-    for (auto i = 0; i < graph.x_max; i++)
+    cilk_for (auto i = 0; i < graph.x_max; i++)
     {
         delete(finalDists[i]);
         delete(assignments[i]);
@@ -353,7 +373,7 @@ void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur)
 
     // prepare the graph, and zero out areas around seeds
     Graph& graph = *Graph::getNewGraph(z, edgePower, blur);
-    graph.zeroSeeds(*seeds);
+    graph.zeroSeeds(*seeds, radii);
 
     // initialize and run dijsktra
     Dijkstra dijkstra(graph);

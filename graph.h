@@ -32,7 +32,7 @@ class Graph {
     vector<Point> getNeighbors(Point point);
     Graph();
     Graph(int z, int edgePower, int blur);
-    void zeroSeeds(map<int, vector<Point>> seeds);
+    void zeroSeeds(map<int, vector<Point>> seeds, map<Point, int> radii);
     ~Graph();
     
     static Graph* getNewGraph(int z, int edgePower, int blur = 0);

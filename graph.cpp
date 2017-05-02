@@ -9,6 +9,7 @@
 using namespace std;
 
 static string worm_path = "/home/heather/worm/";
+static string alternate_probs_path = "/mnt/disk7/rajeev/xnn_output/";
 
 // these are just the overall dimensions.
 int X_I_MAX = 101631 / 2;
@@ -89,23 +90,15 @@ Graph::Graph(int zDesired, int edgePower, int blur)
 
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
-
-    if (USE_ALTERNATE)
-    {
-        this->halfProbs = alternateOpenImages(z, edgePower, blur);
-    }
-    else
-    {
-        this->halfProbs = openImages(z, edgePower, blur);
-    }
+    this->halfProbs = openImages(z, edgePower, blur);
 }
 
 Graph::Graph() {};
 
 float Graph::getEdgeWeight(Point point1, Point point2)
 {
-    return halfProbs[point1.first][point1.second]
-        + halfProbs[point2.first][point2.second];
+    return (halfProbs[point1.first][point1.second] + halfProbs[point2.first][point2.second])
+        * sqrt(abs(point1.first - point2.first) + abs(point1.second - point2.second));
 }
 
 vector<Point> Graph::getNeighbors(Point point)
@@ -137,19 +130,23 @@ vector<Point> Graph::getNeighbors(Point point)
     return neighbors;
 }
 
-void Graph::zeroSeeds(map<int, vector<Point>> seeds)
+void Graph::zeroSeeds(map<int, vector<Point>> seeds, map<Point, int> radii)
 {
     auto allPoints = condenseSeeds(&seeds);
     for (auto point : allPoints)
     {
         auto x = point.first;
         auto y = point.second;
+        auto radius = radii[point];
 
-        for (auto i = x - SEED_RADIUS; i <= x + SEED_RADIUS; i++)
+        for (auto i = x - radius; i <= x + radius; i++)
         {
-            for (auto j = y - SEED_RADIUS; j <= y + SEED_RADIUS; j++)
+            for (auto j = y - radius; j <= y + radius; j++)
             {
-                halfProbs[i][j] = 0;
+                if (sqrt((i-x)*(i-x) + (j-y)*(j-y)) <= radius)
+                {
+                    halfProbs[i][j] = 0;
+                }
             }
         }
     }
@@ -178,15 +175,7 @@ LogGraph::LogGraph(int zDesired, int blur)
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
 
-    // this is the difference!!
-    if (USE_ALTERNATE)
-    {
-        this->halfProbs = alternateOpenImagesLog(z, blur);
-    }
-    else
-    {
-        this->halfProbs = openImagesLog(z, blur);
-    }
+    this->halfProbs = openImagesLog(z, blur);
 }
 
 
@@ -220,6 +209,14 @@ string getImageName(int z, int yblock, int xblock)
     return path + filename;
 }
 
+string alternateGetImageName(int z, int yblock, int xblock)
+{
+    string path = alternate_probs_path + to_string(z) + "/";
+    string filename = to_string(yblock) + "_" + to_string(xblock) + ".png";
+    return path + filename;
+}
+
+
 float** openImages(int z, int edgePower, int blur)
 {
     float** array = new float*[X_I_MAX];
@@ -237,13 +234,16 @@ float** openImages(int z, int edgePower, int blur)
 
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
+    
+    auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
 
-    for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
+    cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {
         for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
         {
-            string filePath = getImageName(z, yblock, xblock);
+            string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
+            if (!f.good()) cout << "fuck!!!\n";;
             if (!f.good()) continue;
 
             cimg_library::CImg<short> image(filePath.c_str());
@@ -282,11 +282,13 @@ float** openImagesLog(int z, int blur)
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
 
-    for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
+    auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
+
+    cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {
         for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
         {
-            string filePath = getImageName(z, yblock, xblock);
+            string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
             if (!f.good()) continue;
 
@@ -308,118 +310,6 @@ float** openImagesLog(int z, int blur)
     }
     return array;
 }
-
-float** alternateOpenImages(int z, int edgePower, int blur)
-{
-    float** array = new float*[X_I_MAX];
-    for (int x = 0; x < X_I_MAX; x++)
-    {
-        array[x] = new float[Y_I_MAX];
-    }
-    cilk_for (int x = 0; x < X_I_MAX; x++)
-    {
-        for (int y = 0; y < Y_I_MAX; y++)
-        {
-            array[x][y] = DEFAULT_PROBABILITY;
-        }
-    }
-
-    cout << "about to open alternate image\n";
-    cout.flush();
-
-    string imageName = "/home/rajeev/tile_output/" + to_string(z) + "_probs.png";
-    ifstream f(imageName.c_str());
-    if (!f.good()) cout << "THERE IS NO TILE OUTPUT HERE!!!!\n";
-    cimg_library::CImg<short> image(imageName.c_str());
-
-    int boundary = 110;
-
-    int min_x = max(X_MIN_DESIRED, boundary);
-    int max_x = min(X_MAX_DESIRED, 33800);
-    int min_y = max(Y_MIN_DESIRED, boundary);
-    int max_y = min(Y_MAX_DESIRED, 22600);
-
-    image.crop(min_x - boundary, 
-            min_y - boundary, 
-            0, 0, 
-            max_x - boundary, 
-            max_y - boundary, 
-            0, 0);
-    if (blur) image.blur(float(blur), float(blur), float(0));
-    cout << "done blurring images\n";
-    cout.flush();
-
-    for (int x_ind = 0; x_ind < max_x - min_x; x_ind++)
-    {
-        int x_i = x_ind + min_x;
-        for (int y_ind = 0; y_ind < max_y - min_y; y_ind++)
-        {
-            int y_i = y_ind + min_y;
-            array[x_i][y_i] = pow(
-                    float(image(x_ind, y_ind) / 256.0),
-                    edgePower);
-        }
-    }
-    return array;
-}
-
-
-float** alternateOpenImagesLog(int z, int blur)
-{
-    float** array = new float*[X_I_MAX];
-    for (int x = 0; x < X_I_MAX; x++)
-    {
-        array[x] = new float[Y_I_MAX];
-    }
-    cilk_for (int x = 0; x < X_I_MAX; x++)
-    {
-        for (int y = 0; y < Y_I_MAX; y++)
-        {
-            array[x][y] = DEFAULT_PROBABILITY;
-        }
-    }
-
-    cout << "about to open alternate image\n";
-    cout.flush();
-
-    string imageName = "/home/rajeev/tile_output/" + to_string(z) + "_probs.png";
-    ifstream f(imageName.c_str());
-    if (!f.good()) cout << "THERE IS NO TILE OUTPUT HERE!!!!\n";
-    cimg_library::CImg<short> image(imageName.c_str());
-
-    int boundary = 110;
-
-    int min_x = max(X_MIN_DESIRED, boundary);
-    int max_x = min(X_MAX_DESIRED, 33800);
-    int min_y = max(Y_MIN_DESIRED, boundary);
-    int max_y = min(Y_MAX_DESIRED, 22600);
-
-    image.crop(min_x - boundary, 
-            min_y - boundary, 
-            0, 0, 
-            max_x - boundary, 
-            max_y - boundary, 
-            0, 0);
-    if (blur) image.blur(float(blur), float(blur), float(0));
-    cout << "done blurring images\n";
-    cout.flush();
-
-    for (int x_ind = 0; x_ind < max_x - min_x; x_ind++)
-    {
-        int x_i = x_ind + min_x;
-        for (int y_ind = 0; y_ind < max_y - min_y; y_ind++)
-        {
-            int y_i = y_ind + min_y;
-            auto imagePixel = image(x_ind, y_ind);
-            array[x_i][y_i] = -float(
-                    log(1.0 - imagePixel / 256.0)
-                    / log(2.0)
-                    );
-        }
-    }
-    return array;
-}
-
 
 string getEMImageName(int z, int yem, int xem)
 {
@@ -448,7 +338,7 @@ uint8_t** openEMImages(int z)
     }
 
     int EM_BLOCK_SIZE = 512;
-    for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE + 1; xem++)
+    cilk_for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE + 1; xem++)
     {
         for (int yem = Y_MIN_DESIRED / EM_BLOCK_SIZE; yem < Y_MAX_DESIRED / EM_BLOCK_SIZE + 1; yem++)
         {

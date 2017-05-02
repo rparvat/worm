@@ -4,6 +4,7 @@ data/
 probs_txt/
 *.swp
 skeleton/
+skeletons/
 output_*.txt
 output_*.png
 output_images/
