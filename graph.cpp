@@ -16,19 +16,15 @@ int X_I_MAX = 101631 / 2;
 int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.
-int X_MIN_DESIRED = 18000; //X_I_MAX / 5 * 2;//0;
-int X_MAX_DESIRED = 24500; //X_I_MAX / 5 * 3;//X_I_MAX;
-//int X_MIN_DESIRED = 0;
-//int X_MAX_DESIRED = X_I_MAX;
-//static int X_MIN_DESIRED = 13000;
-//static int X_MAX_DESIRED = 28000;
+//int X_MIN_DESIRED = 18000; //X_I_MAX / 5 * 2;//0;
+//int X_MAX_DESIRED = 24500; //X_I_MAX / 5 * 3;//X_I_MAX;
+int X_MIN_DESIRED = 0;
+int X_MAX_DESIRED = X_I_MAX;
 
-int Y_MIN_DESIRED = 1750; //Y_I_MAX / 12;//0;
-int Y_MAX_DESIRED = 7000; //Y_I_MAX / 12 * 2;//Y_I_MAX;
-//int Y_MIN_DESIRED = 0;
-//int Y_MAX_DESIRED = Y_I_MAX;
-//static int Y_MIN_DESIRED = 1000;
-//static int Y_MAX_DESIRED = 20000;
+//int Y_MIN_DESIRED = 1750; //Y_I_MAX / 12;//0;
+//int Y_MAX_DESIRED = 7000; //Y_I_MAX / 12 * 2;//Y_I_MAX;
+int Y_MIN_DESIRED = 0;
+int Y_MAX_DESIRED = Y_I_MAX;
 
 // these are helpers -- can ignore.
 int BLOCK_SIZE = 1024;
@@ -290,7 +286,10 @@ float** openImagesLog(int z, int blur)
         {
             string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
-            if (!f.good()) continue;
+            if (!f.good()) {
+                //cout << "xblock " << xblock << " yblock " << yblock << " doesn't exist\n";
+                continue;
+            }
 
             cimg_library::CImg<short> image(filePath.c_str());
             if (blur) image.blur(float(blur), float(blur), float(0));

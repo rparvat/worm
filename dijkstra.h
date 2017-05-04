@@ -12,6 +12,7 @@ extern float DEFAULT_DISTANCE;
 extern int DEFAULT_SEED;
 extern int UPDATES_PER_RECONCILE;
 extern int MAX_DISTANCE;
+extern bool PARALLEL_WRITE;
 
 class DijkstraThread;
 

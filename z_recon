@@ -1,17 +1,21 @@
 #!/bin/bash
 
 function recon {
-    cd output_images;
+    mkdir /mnt/disk7/rajeev/algo_output/$1;
     SECONDS=0;
-    echo running $1 >> log;
-    ../worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists true --maxDistance 50 --blur 7 --saveProbs true --showSeeds true;
-    echo took $SECONDS seconds >> log;
-    echo >> log;
-    cd ..;
+    echo running $1 >> /home/rajeev/worm/output_images/log;
+    ./worm --z $1 --edgePower -1 --useAlternate false --saveSeeds true --saveDists false --maxDistance 30 --blur 7 --saveProbs false --showSeeds true --parallelWrite true;
+    echo took $SECONDS seconds >> /home/rajeev/worm/output_images/log;
+    echo >> /home/rajeev/worm/output_images/log;
 }
 
-recon 259
+for i in {400..699}
+do
+    recon $i
+done
+
 echo "
+recon 259
 recon 503
 recon 504
 recon 505
