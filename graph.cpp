@@ -9,8 +9,7 @@
 
 using namespace std;
 
-static string worm_path = "/home/heather/worm/";
-static string alternate_probs_path = "/mnt/disk7/rajeev/xnn_output/";
+string PROBS_PATH = "/mnt/disk7/rajeev/xnn_output/";
 
 // these are just the overall dimensions.
 int X_I_MAX = 101631 / 2;
@@ -196,7 +195,7 @@ string my_itoa(int i, int d)
     }
     return s;
 }
-
+/*
 string getImageName(int z, int yblock, int xblock)
 {
     string path = worm_path + "probs/";
@@ -209,10 +208,11 @@ string getImageName(int z, int yblock, int xblock)
         + "-xnn-out-ch-01.png";
     return path + filename;
 }
+*/
 
 string alternateGetImageName(int z, int yblock, int xblock)
 {
-    string path = alternate_probs_path + to_string(z) + "/";
+    string path = PROBS_PATH + to_string(z) + "/";
     string filename = to_string(yblock) + "_" + to_string(xblock) + ".png";
     return path + filename;
 }
@@ -236,7 +236,8 @@ float** openImages(int z, int edgePower, int blur)
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
     
-    auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
+    //auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
+    auto imageNameFunction = alternateGetImageName;
 
     cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {
@@ -282,7 +283,8 @@ float** openImagesLog(int z, int blur)
     auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
     auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
 
-    auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
+    //auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
+    auto imageNameFunction = alternateGetImageName;
 
     cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
     {

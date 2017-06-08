@@ -1,12 +1,15 @@
 #!/bin/bash
 
+logdir = "/home/rajeev/worm/output_images/log" # make this /dev/null for no log
+datadir = "/mnt/disk7/rajeev/algo_output/" # directory containing both probability maps and segmented images
+
 function recon {
-    mkdir /mnt/disk7/rajeev/algo_output/$1;
+    mkdir $datadir$1;
     SECONDS=0;
-    echo running $1 >> /home/rajeev/worm/output_images/log;
-    /home/rajeev/worm/worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists false --maxDistance 10 --blur 7 --saveProbs false --showSeeds true --parallelWrite true --skipRecon false;
-    echo took $SECONDS seconds >> /home/rajeev/worm/output_images/log;
-    echo >> /home/rajeev/worm/output_images/log;
+    echo running $1 >> $logdir;
+    /home/rajeev/worm/worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists false --maxDistance 10 --blur 7 --saveProbs false --showSeeds true --parallelWrite true --skipRecon false --probDir $datadir;
+    echo took $SECONDS seconds >> $logdir;
+    echo >> $logdir;
 }
 
 

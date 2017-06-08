@@ -20,7 +20,7 @@ extern bool SHOW_SEEDS,
        USE_ALTERNATE;
 
 extern float DEFAULT_PROBABILITY;
-extern string OUTPUT_PATH;
+extern string OUTPUT_PATH, PROBS_PATH;
 
 typedef pair<int, int> Point;
 

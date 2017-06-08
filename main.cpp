@@ -2,6 +2,7 @@
 #include "dijkstra.h"
 #include <iostream>
 #include <iterator>
+#include <string>
 
 namespace po = boost::program_options;
 using namespace std;
@@ -22,9 +23,10 @@ int main(int ac, char* av[])
             ("skipRecon", po::value<bool>(), "flag to skip seed reconstruction")
             ("saveEM", po::value<bool>(), "whether to save EM image")
             ("showSeeds", po::value<bool>(), "to show seeds in probs/seeds/em images")
-            ("useAlternate", po::value<bool>(), "whether to use the alternate probs")
             ("parallelWrite", po::value<bool>(), "whether to output seed image in parallel")
             ("sift", po::value<bool>(), "whether to output SIFT tiles")
+            ("outputDir", po::value<string>(), "where to output seed images")
+            ("probDir", po::value<string>(), "where probability maps are found")
             ;
 
         po::variables_map vm;
@@ -34,6 +36,16 @@ int main(int ac, char* av[])
         if (vm.count("help")) {
             cout << desc << "\n";
             return 1;
+        }
+
+        if (vm.count("outputDir"))
+        {
+            OUTPUT_PATH = vm["outputDir"].as<string>();
+        }
+
+        if (vm.count("probDir"))
+        {
+            PROBS_PATH = vm["probDir"].as<string>();
         }
 
         int z;
@@ -93,7 +105,7 @@ int main(int ac, char* av[])
         if (vm.count("showSeeds")) SHOW_SEEDS = vm["showSeeds"].as<bool>();
         if (SHOW_SEEDS) cout << "showing seed localities!\n";
 
-        USE_ALTERNATE = vm.count("useAlternate") && vm["useAlternate"].as<bool>();
+        USE_ALTERNATE = true;
         if (USE_ALTERNATE) cout << "using alternate probs images!!!\n";
 
         if (vm.count("parallelWrite")) PARALLEL_WRITE = vm["parallelWrite"].as<bool>();
