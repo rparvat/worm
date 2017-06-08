@@ -24,6 +24,7 @@ int main(int ac, char* av[])
             ("showSeeds", po::value<bool>(), "to show seeds in probs/seeds/em images")
             ("useAlternate", po::value<bool>(), "whether to use the alternate probs")
             ("parallelWrite", po::value<bool>(), "whether to output seed image in parallel")
+            ("sift", po::value<bool>(), "whether to output SIFT tiles")
             ;
 
         po::variables_map vm;
@@ -124,6 +125,12 @@ int main(int ac, char* av[])
             cout << "saving EM image\n";
             saveEM(z);
         }
+        if (vm.count("sift") && vm["sift"].as<bool>())
+        {
+            cout << "outputting EM tiles for SIFT!\n";
+            tileEMImages_SIFT(z);
+        }
+
 
     }
     catch (exception& e)

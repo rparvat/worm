@@ -4,28 +4,14 @@ function recon {
     mkdir /mnt/disk7/rajeev/algo_output/$1;
     SECONDS=0;
     echo running $1 >> /home/rajeev/worm/output_images/log;
-    ./worm --z $1 --edgePower -1 --useAlternate false --saveSeeds true --saveDists false --maxDistance 30 --blur 7 --saveProbs false --showSeeds true --parallelWrite true;
+    /home/rajeev/worm/worm --z $1 --edgePower -1 --useAlternate true --saveSeeds true --saveDists false --maxDistance 10 --blur 7 --saveProbs false --showSeeds true --parallelWrite true --skipRecon false;
     echo took $SECONDS seconds >> /home/rajeev/worm/output_images/log;
     echo >> /home/rajeev/worm/output_images/log;
 }
 
-for i in {400..699}
+
+for i in {1..999}
 do
     recon $i
 done
 
-echo "
-recon 259
-recon 503
-recon 504
-recon 505
-recon 506
-recon 507
-recon 508
-recon 509
-recon 510
-recon 511
-recon 512
-recon 513
-recon 514
-"

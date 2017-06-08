@@ -15,7 +15,6 @@ bool PARALLEL_WRITE = false;
 
 static map<Point, int> radii;
 
-static string OUTPUT_PATH = "/mnt/disk7/rajeev/algo_output/";
 // returns map from seed id to (x,y) coordinates of the seed in this frame.
 map<int, vector<Point>>* getSeeds(int desiredZ)
 { 
@@ -268,35 +267,6 @@ void saveProbs(int z, int blur)
     cout << " done!\n";
     cout.flush();
     delete(&probs);
-}
-
-void saveEM_SIFT(int z)
-{
-    cout << "saving EM tiles for SIFT";
-    uint8_t** em_vals = openEMImages(z);
-    cv::Mat& em = *new cv::Mat(
-            Y_MAX_DESIRED - Y_MIN_DESIRED,
-            X_MAX_DESIRED - X_MIN_DESIRED,
-            CV_8UC1,
-            cv::Scalar(0));
-    cilk_for (int x = X_MIN_DESIRED; x < X_MAX_DESIRED; x++)
-    {
-        for (int y = Y_MIN_DESIRED; y < Y_MAX_DESIRED; y++)
-        {
-            em.at<uint8_t>(cv::Point(x - X_MIN_DESIRED, y - Y_MIN_DESIRED)) 
-                = em_vals[x][y];
-        }
-    }
-
-    cv::imwrite(OUTPUT_PATH + "output_" + to_string(z) + "_em.png", em);
-    for (auto i = 0; i < X_MAX_DESIRED; i++)
-    {
-        delete(em_vals[i]);
-    }
-    delete(em_vals);
-    delete(&em);
-    cout << "done!\n";
-
 }
 
 

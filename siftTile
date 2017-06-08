@@ -1,0 +1,7 @@
+#!/bin/bash
+for i in {0..999}
+do
+    echo $i;
+    ./worm --z $i --skipRecon true --sift true;
+done
+

@@ -13,12 +13,14 @@ extern int X_I_MAX,
        Y_MIN_DESIRED,
        Y_MAX_DESIRED,
        BLOCK_SIZE,
+       EM_BLOCK_SIZE,
        SEED_RADIUS;
 
 extern bool SHOW_SEEDS, 
        USE_ALTERNATE;
 
 extern float DEFAULT_PROBABILITY;
+extern string OUTPUT_PATH;
 
 typedef pair<int, int> Point;
 
@@ -47,9 +49,10 @@ class LogGraph: public Graph {
 vector<Point> condenseSeeds(map<int, vector<Point>>* seeds);
 string getImageName(int z, int yblock, int xblock);
 float** openImages(int z, int edgePower, int blur);
-float** alternateOpenImages(int z, int edgePower, int blur);
 float** openImagesLog(int z, int blur);
-float** alternateOpenImagesLog(int z, int blur);
 uint8_t** openEMImages(int z);
+
+string getSiftImageName(int z, int y_i, int x_i, int delta);
+void tileEMImages_SIFT(int z);
         
 

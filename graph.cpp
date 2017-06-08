@@ -1,6 +1,7 @@
 #include "graph.h"
 #include "CImg.h"
 #include "png.h"
+#include <opencv2/opencv.hpp>
 
 #include <iostream>
 #include <cassert>
@@ -28,15 +29,19 @@ int Y_MAX_DESIRED = Y_I_MAX;
 
 // these are helpers -- can ignore.
 int BLOCK_SIZE = 1024;
-int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE;
-int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE;
+int X_BLOCK_MAX = X_MAX_DESIRED / BLOCK_SIZE - 1;
+int Y_BLOCK_MAX = Y_MAX_DESIRED / BLOCK_SIZE - 1;
+
+int EM_BLOCK_SIZE = 512;
 
 bool SHOW_SEEDS = true;
 bool USE_ALTERNATE = false;
 
 int SEED_RADIUS = 7;
-
 float DEFAULT_PROBABILITY = 100000;
+
+string OUTPUT_PATH = "/mnt/disk7/rajeev/algo_output/";
+static string SIFT_PATH = "/mnt/disk7/rajeev/sift_tiles/";
 
 string zToString(int z) 
 {
@@ -239,7 +244,6 @@ float** openImages(int z, int edgePower, int blur)
         {
             string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
-            if (!f.good()) cout << "fuck!!!\n";;
             if (!f.good()) continue;
 
             cimg_library::CImg<short> image(filePath.c_str());
@@ -312,13 +316,70 @@ float** openImagesLog(int z, int blur)
 
 string getEMImageName(int z, int yem, int xem)
 {
-    string path = worm_path + "EM/";
+    string path = "/mnt/disk10/heather/worm-project/data/";
     string dirName = to_string(z) + "/";
     path = path + dirName;
     string filename = to_string(yem) + "_" 
         + to_string(xem) + "_"
         + "1.jpg";
     return path + filename;
+}
+
+void tileEMImages_SIFT(int z)
+{
+    int x_block_min = X_MIN_DESIRED / EM_BLOCK_SIZE;
+    int x_block_max = X_MAX_DESIRED / EM_BLOCK_SIZE;
+
+    int y_block_min = Y_MIN_DESIRED / EM_BLOCK_SIZE;
+    int y_block_max = Y_MAX_DESIRED / EM_BLOCK_SIZE;
+
+    int groupBlocks = 8; // for 4096 images
+    int extraBlocks = 2;
+    int delta = (groupBlocks + extraBlocks) * EM_BLOCK_SIZE;
+
+    cilk_for (int xblock = x_block_min; xblock <= x_block_max; xblock += groupBlocks)
+    {
+        cilk_for (int yblock = y_block_min; yblock <= y_block_max; yblock += groupBlocks)
+        {
+            cv::Mat siftBlock(delta, delta, CV_8UC1, cv::Scalar(0));
+            //cout << "made it, sift type " << siftBlock.type() << "\n";
+            for (int x = xblock; x < min(xblock + groupBlocks + extraBlocks, x_block_max); x++)
+            {
+                for (int y = yblock; y < min(yblock + groupBlocks + extraBlocks, y_block_max); y++)
+                {
+                    string filename = getEMImageName(z, y, x);
+                    cv::Mat emBlock = cv::imread(filename, cv::IMREAD_GRAYSCALE);
+                    //cout << "emblock type: " << emBlock.type() << "\n";
+
+                    cv::Range colRange((x - xblock) * EM_BLOCK_SIZE, 
+                                    (x - xblock + 1) * EM_BLOCK_SIZE);
+                    cv::Range rowRange((y - yblock) * EM_BLOCK_SIZE, 
+                                    (y - yblock + 1) * EM_BLOCK_SIZE);
+                    cv::Mat siftSection = siftBlock(rowRange, colRange);
+                    //cout << "siftSection type: " << siftSection.type();
+                    emBlock.copyTo(siftSection);
+                    //siftSection.setTo(emBlock);
+                }
+            }
+            if (cv::countNonZero(siftBlock) == 0) continue;
+            //cout << "all the way\n";
+            int begin_x_i = xblock * EM_BLOCK_SIZE;
+            int begin_y_i = yblock * EM_BLOCK_SIZE;
+            string siftName = getSiftImageName(z, begin_y_i, begin_x_i, delta);
+            cv::imwrite(siftName, siftBlock);
+        }
+    }
+}
+
+string getSiftImageName(int z, int y_i, int x_i, int delta)
+{
+    string filename = to_string(x_i)
+        + "_" + to_string(y_i)
+        + "_" + to_string(delta)
+        + "_" + to_string(delta)
+        + "_" + to_string(z)
+        + ".png";
+    return SIFT_PATH + to_string(z) + "/" + filename;
 }
 
 uint8_t** openEMImages(int z)
@@ -336,7 +397,6 @@ uint8_t** openEMImages(int z)
         }
     }
 
-    int EM_BLOCK_SIZE = 512;
     cilk_for (int xem = X_MIN_DESIRED / EM_BLOCK_SIZE; xem < X_MAX_DESIRED / EM_BLOCK_SIZE + 1; xem++)
     {
         for (int yem = Y_MIN_DESIRED / EM_BLOCK_SIZE; yem < Y_MAX_DESIRED / EM_BLOCK_SIZE + 1; yem++)
