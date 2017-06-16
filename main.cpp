@@ -106,7 +106,6 @@ int main(int ac, char* av[])
         if (SHOW_SEEDS) cout << "showing seed localities!\n";
 
         USE_ALTERNATE = true;
-        if (USE_ALTERNATE) cout << "using alternate probs images!!!\n";
 
         if (vm.count("parallelWrite")) PARALLEL_WRITE = vm["parallelWrite"].as<bool>();
         if (PARALLEL_WRITE && saveSeeds) cout << "writing seed image in parallel\n";

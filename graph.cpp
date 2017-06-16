@@ -249,10 +249,10 @@ float** openImages(int z, int edgePower, int blur)
 
             cimg_library::CImg<short> image(filePath.c_str());
             if (blur) image.blur(float(blur), float(blur), float(0));
-            for (int xind = 0; xind < BLOCK_SIZE; xind++)
+            for (int xind = 0; xind < image.width(); xind++)
             {
                 int x_i = (xblock) * BLOCK_SIZE + xind;
-                for (int yind = 0; yind < BLOCK_SIZE; yind++)
+                for (int yind = 0; yind < image.height(); yind++)
                 {
                     int y_i = (yblock) * BLOCK_SIZE + yind;
                     array[x_i][y_i] = pow(
@@ -299,10 +299,10 @@ float** openImagesLog(int z, int blur)
 
             cimg_library::CImg<short> image(filePath.c_str());
             if (blur) image.blur(float(blur), float(blur), float(0));
-            for (int xind = 0; xind < BLOCK_SIZE; xind++)
+            for (int xind = 0; xind < image.width(); xind++)
             {
                 int x_i = (xblock) * BLOCK_SIZE + xind;
-                for (int yind = 0; yind < BLOCK_SIZE; yind++)
+                for (int yind = 0; yind < image.height(); yind++)
                 {
                     int y_i = (yblock) * BLOCK_SIZE + yind;
                     array[x_i][y_i] = -float(
