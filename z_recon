@@ -14,11 +14,9 @@ function recon {
     echo >> $logdir;
 }
 
-recon 183
 
-
-#for i in {1..999}
-#do
-#    recon $i
-#done
+for i in {1..300}
+do
+    recon $i
+done
 

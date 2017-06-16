@@ -7,7 +7,8 @@ newDirectory = "/home/rajeev/worm/skeleton/"
 
 radiusExists = 0
 nucleusExists = 0
-with open(newDirectory + "new_seeds.txt", "w") as f:
+numLines = 0
+with open(newDirectory + "new_seeds_tmp.txt", "w") as f:
     for filename in os.listdir(initialDirectory):
         if filename == "README":
             continue
@@ -36,5 +37,12 @@ with open(newDirectory + "new_seeds.txt", "w") as f:
                 coords.append(str(rad))
 
                 f.write(" ".join(coords) + "\n")
+                numLines += 1
+
+with open(newDirectory + "new_seeds_tmp.txt", "r") as f:
+    with open(newDirectory + "new_seeds.txt", "w") as g:
+        g.write(str(numLines) + "\n")
+        for each in f:
+            g.write(each)
 
 print "radius: ", radiusExists, ", nucleus: ", nucleusExists

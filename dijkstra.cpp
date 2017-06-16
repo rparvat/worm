@@ -176,7 +176,7 @@ void Dijkstra::saveSeeds()
     }
     else
     {
-        cv::imwrite(seedOutputPath + "output_" + to_string(graph.z) + ".png", img);
+        cv::imwrite(seedOutputPath + "output_" + to_string(graph.z) + ".tiff", img);
     }
     cout << " done with seed image!\n";
     cout.flush();
@@ -190,6 +190,8 @@ void Dijkstra::saveDists()
     //
     cout << "saving dists image...";
     cout.flush();
+
+    string distsOutputPath = OUTPUT_PATH + to_string(graph.z) + "/";
     cv::Mat& dists = *new cv::Mat(
             graph.desired_y_max - graph.y_min, 
             graph.desired_x_max - graph.x_min, 
@@ -205,7 +207,7 @@ void Dijkstra::saveDists()
                 = toSave;
         }
     }
-    cv::imwrite(OUTPUT_PATH + "output_" + to_string(graph.z) + "_dists.png", dists);
+    cv::imwrite(distsOutputPath + "output_" + to_string(graph.z) + "_dists.tiff", dists);
     cout << " done!\n";
     cout.flush();
     delete(&dists);
