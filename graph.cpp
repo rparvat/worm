@@ -12,7 +12,7 @@ using namespace std;
 string PROBS_PATH = "/mnt/disk7/rajeev/xnn_output/";
 
 // these are just the overall dimensions.
-int X_I_MAX = 101631 / 2;
+int X_I_MAX = 101631;// / 2;
 int Y_I_MAX = 45567;
 
 // these give the area that we are interested in.

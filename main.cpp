@@ -27,6 +27,7 @@ int main(int ac, char* av[])
             ("sift", po::value<bool>(), "whether to output SIFT tiles")
             ("outputDir", po::value<string>(), "where to output seed images")
             ("probDir", po::value<string>(), "where probability maps are found")
+            ("seedFile", po::value<string>(), "file with all the cell seeds for all layers")
             ;
 
         po::variables_map vm;
@@ -46,6 +47,11 @@ int main(int ac, char* av[])
         if (vm.count("probDir"))
         {
             PROBS_PATH = vm["probDir"].as<string>();
+        }
+
+        if (vm.count("seedFile"))
+        {
+            SEED_LOCATION = vm["seedFile"].as<string>();
         }
 
         int z;

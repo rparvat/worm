@@ -12,6 +12,7 @@ float DEFAULT_DISTANCE = INT_MAX;
 int DEFAULT_SEED = 0;
 int MAX_DISTANCE = 128;
 bool PARALLEL_WRITE = false;
+string SEED_LOCATION = "/home/rajeev/worm/skeleton/new_seeds.txt";
 
 static map<Point, int> radii;
 
@@ -21,7 +22,7 @@ map<int, vector<Point>>* getSeeds(int desiredZ)
     // assuming the input is ID X Y Z
     // and top of input has number of things
     cout << "getting seeds... ";
-    string filename = "/home/rajeev/worm/skeleton/new_seeds.txt";
+    string filename = SEED_LOCATION;
     ifstream in(filename, ios_base::in);
     
     auto seeds = new map<int, vector<pair<int, int>>>();
