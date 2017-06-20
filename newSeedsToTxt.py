@@ -32,7 +32,7 @@ with open(newDirectory + "new_seeds_tmp.txt", "w") as f:
 
                 rad = 7
                 if line_ints[3] != -1:
-                    rad = line_ints[3]/2
+                    rad = line_ints[3]/4
                     radiusExists += 1
                 coords.append(str(rad))
 
