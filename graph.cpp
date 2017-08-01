@@ -280,16 +280,17 @@ float** openImagesLog(int z, int blur)
         }
     }
 
-    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
-    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
+    int minXBlock = max(1, X_MIN_DESIRED / BLOCK_SIZE);
+    int minYBlock = max(1, Y_MIN_DESIRED / BLOCK_SIZE);
 
     //auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
     auto imageNameFunction = alternateGetImageName;
 
-    cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
+    cilk_for (int xblock = minXBlock; xblock < X_BLOCK_MAX; xblock++)
     {
-        for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
+        for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
         {
+            std::cout << "opening " << yblock << "_" << xblock << "\n";
             string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
             if (!f.good()) {
@@ -298,19 +299,28 @@ float** openImagesLog(int z, int blur)
             }
 
             cimg_library::CImg<short> image(filePath.c_str());
+            auto median = image.median();
+            if (image.max() <= 5 + image.min()) 
+            {
+                continue;
+            }
             if (blur) image.blur(float(blur), float(blur), float(0));
-            for (int xind = 0; xind < image.width(); xind++)
+
+            auto width = std::min(image.width(), BLOCK_SIZE);
+            auto height = std::min(image.height(), BLOCK_SIZE);
+            for (int xind = 0; xind < width; xind++)
             {
                 int x_i = (xblock) * BLOCK_SIZE + xind;
-                for (int yind = 0; yind < image.height(); yind++)
+                for (int yind = 0; yind < height; yind++)
                 {
                     int y_i = (yblock) * BLOCK_SIZE + yind;
                     array[x_i][y_i] = -float(
-                            log(1.0 - image(xind, yind) / 256.0)
+                            log(1.0 - image(xind, yind) / 255.1)
                             / log(2.0)
                             );
                 }
             }
+            std::cout << "done opening " << yblock << "_" << xblock << "\n";
         }
     }
     return array;

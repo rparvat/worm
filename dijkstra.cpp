@@ -170,7 +170,7 @@ void Dijkstra::saveSeeds()
                 cv::Mat blockImg = img(rowRange, colRange);
 
                 string imageName = to_string(xblock) + "_"
-                    + to_string(yblock) + ".png";
+                    + to_string(yblock) + ".tiff";
                 cv::imwrite(seedOutputPath + imageName, blockImg);
             }
         }
