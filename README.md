@@ -32,9 +32,9 @@ Uses parallel Dijkstra algorithm to segment image.
 1. Creates a directory corresponding to the specific z layer prior to running the algorithm and producing output images
 
 ### Options
-1. datadir: where the inputs are stored
+1. outputdir: where to write the output images
 1. logdir: location of a log to write to
-1. probdir: where the outputs should be written
+1. xnndir: where the probability maps are located
 
 
 

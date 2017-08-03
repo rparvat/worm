@@ -48,8 +48,7 @@ class LogGraph: public Graph {
 
 vector<Point> condenseSeeds(map<int, vector<Point>>* seeds);
 string getImageName(int z, int yblock, int xblock);
-float** openImages(int z, int edgePower, int blur);
-float** openImagesLog(int z, int blur);
+float** openImagesLog(int z, int blur, int edgePower = -1);
 uint8_t** openEMImages(int z);
 
 string getSiftImageName(int z, int y_i, int x_i, int delta);

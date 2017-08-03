@@ -90,7 +90,7 @@ Graph::Graph(int zDesired, int edgePower, int blur)
 
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
-    this->halfProbs = openImages(z, edgePower, blur);
+    this->halfProbs = openImagesLog(z, blur, edgePower);
 }
 
 Graph::Graph() {};
@@ -139,9 +139,13 @@ void Graph::zeroSeeds(map<int, vector<Point>> seeds, map<Point, int> radii)
         auto y = point.second;
         auto radius = radii[point];
 
-        for (auto i = x - radius; i <= x + radius; i++)
+        auto minX = std::max(x - radius, 0);
+        auto maxX = std::min(x + radius, X_I_MAX);
+        auto minY = std::max(y - radius, 0);
+        auto maxY = std::min(y + radius, Y_I_MAX);
+        for (auto i = minX; i <= maxX; i++)
         {
-            for (auto j = y - radius; j <= y + radius; j++)
+            for (auto j = minY; j <= maxY; j++)
             {
                 if (sqrt((i-x)*(i-x) + (j-y)*(j-y)) <= radius)
                 {
@@ -175,7 +179,7 @@ LogGraph::LogGraph(int zDesired, int blur)
     this->desired_x_max = X_MAX_DESIRED;
     this->desired_y_max = Y_MAX_DESIRED;
 
-    this->halfProbs = openImagesLog(z, blur);
+    this->halfProbs = openImagesLog(z, blur, -1);
 }
 
 
@@ -217,8 +221,7 @@ string alternateGetImageName(int z, int yblock, int xblock)
     return path + filename;
 }
 
-
-float** openImages(int z, int edgePower, int blur)
+float** openImagesLog(int z, int blur, int edgePower)
 {
     float** array = new float*[X_I_MAX];
     for (int x = 0; x < X_I_MAX; x++)
@@ -233,52 +236,18 @@ float** openImages(int z, int edgePower, int blur)
         }
     }
 
-    auto minXBlock = X_MIN_DESIRED / BLOCK_SIZE;
-    auto minYBlock = Y_MIN_DESIRED / BLOCK_SIZE;
-    
-    //auto imageNameFunction = USE_ALTERNATE ? alternateGetImageName : getImageName;
-    auto imageNameFunction = alternateGetImageName;
-
-    cilk_for (int xblock = minXBlock; xblock <= X_BLOCK_MAX; xblock++)
-    {
-        for (int yblock = minYBlock; yblock <= Y_BLOCK_MAX; yblock++)
-        {
-            string filePath = imageNameFunction(z, yblock, xblock);
-            ifstream f(filePath.c_str());
-            if (!f.good()) continue;
-
-            cimg_library::CImg<short> image(filePath.c_str());
-            if (blur) image.blur(float(blur), float(blur), float(0));
-            for (int xind = 0; xind < image.width(); xind++)
-            {
-                int x_i = (xblock) * BLOCK_SIZE + xind;
-                for (int yind = 0; yind < image.height(); yind++)
-                {
-                    int y_i = (yblock) * BLOCK_SIZE + yind;
-                    array[x_i][y_i] = pow(
-                            float(image(xind, yind) / 256.0),
-                            edgePower);
-                }
-            }
-        }
-    }
-    return array;
-}
-
-float** openImagesLog(int z, int blur)
-{
-    float** array = new float*[X_I_MAX];
-    for (int x = 0; x < X_I_MAX; x++)
-    {
-        array[x] = new float[Y_I_MAX];
-    }
-    cilk_for (int x = 0; x < X_I_MAX; x++)
-    {
-        for (int y = 0; y < Y_I_MAX; y++)
-        {
-            array[x][y] = DEFAULT_PROBABILITY;
-        }
-    }
+    auto f1 = [](uint8_t pixel, int edgePower) {
+        return -float(
+            log(1.0 - pixel / 255.1)
+            / log(2.0)
+            );
+    };
+    auto f2 = [](uint8_t pixel, int edgePower) {
+        return float(pow(
+            float(pixel / 255.1),
+            edgePower));
+        };
+    auto func = (edgePower == -1) ? f1 : f2;
 
     int minXBlock = max(1, X_MIN_DESIRED / BLOCK_SIZE);
     int minYBlock = max(1, Y_MIN_DESIRED / BLOCK_SIZE);
@@ -290,7 +259,6 @@ float** openImagesLog(int z, int blur)
     {
         for (int yblock = minYBlock; yblock < Y_BLOCK_MAX; yblock++)
         {
-            std::cout << "opening " << yblock << "_" << xblock << "\n";
             string filePath = imageNameFunction(z, yblock, xblock);
             ifstream f(filePath.c_str());
             if (!f.good()) {
@@ -298,29 +266,32 @@ float** openImagesLog(int z, int blur)
                 continue;
             }
 
-            cimg_library::CImg<short> image(filePath.c_str());
-            auto median = image.median();
-            if (image.max() <= 5 + image.min()) 
+            cv::Mat image = cv::imread(filePath.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+            double min, max;
+            cv::minMaxLoc(image, &min, &max);
+            if (max <= 5 + min) 
             {
                 continue;
             }
-            if (blur) image.blur(float(blur), float(blur), float(0));
+            if (blur) 
+            {
+                cv::Mat blurredImage;
+                cv::blur(image, blurredImage, cv::Size(blur, blur));
+                image = blurredImage;
+            }
 
-            auto width = std::min(image.width(), BLOCK_SIZE);
-            auto height = std::min(image.height(), BLOCK_SIZE);
+            auto width = std::min(image.cols, BLOCK_SIZE);
+            auto height = std::min(image.rows, BLOCK_SIZE);
             for (int xind = 0; xind < width; xind++)
             {
                 int x_i = (xblock) * BLOCK_SIZE + xind;
                 for (int yind = 0; yind < height; yind++)
                 {
+                    uint8_t pixel  = image.at<uint8_t>(yind, xind);
                     int y_i = (yblock) * BLOCK_SIZE + yind;
-                    array[x_i][y_i] = -float(
-                            log(1.0 - image(xind, yind) / 255.1)
-                            / log(2.0)
-                            );
+                    array[x_i][y_i] = func(pixel, edgePower);
                 }
             }
-            std::cout << "done opening " << yblock << "_" << xblock << "\n";
         }
     }
     return array;
