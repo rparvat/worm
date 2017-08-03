@@ -67,20 +67,18 @@ Dijkstra::Dijkstra(Graph& inputGraph):
 
 void Dijkstra::initArrays()
 {
-    finalDists = new float*[graph.x_max];
-    assignments = new int*[graph.x_max];
+    output = new double*[graph.x_max];
 
     for (int i = 0; i < graph.x_max; i++)
     {
-        finalDists[i] = new float[graph.y_max];
-        assignments[i] = new int[graph.y_max];
+        output[i] = new double[graph.y_max];
     }
+    double defaultCombined = combineDistSeed(DEFAULT_DISTANCE, DEFAULT_SEED);
     cilk_for (int i = 0; i < graph.x_max; i++)
     {
         for (int j = 0; j < graph.y_max; j++)
         {
-            finalDists[i][j] = DEFAULT_DISTANCE;
-            assignments[i][j]= DEFAULT_SEED;
+            output[i][j] = defaultCombined;
         }
     }
 }
@@ -121,7 +119,7 @@ void Dijkstra::saveSeeds()
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
             img.at<cv::Vec3b>(cv::Point(x - graph.x_min, y - graph.y_min)) 
-                = seedMap[assignments[x][y]];
+                = seedMap[separateDistSeed(output[x][y]).second];
         }
     }
 
@@ -202,8 +200,9 @@ void Dijkstra::saveDists()
     {
         for (int y = graph.y_min; y < graph.desired_y_max; y++)
         {
-            uint8_t toSave = (finalDists[x][y] == DEFAULT_DISTANCE) ? 0 : 
-                min(int(finalDists[x][y]), 255);
+            float dist = separateDistSeed(output[x][y]).first;
+            uint8_t toSave = (dist == DEFAULT_DISTANCE) ? 0 : 
+                min(int(dist), 255);
             dists.at<uint8_t>(cv::Point(x - graph.x_min, y - graph.y_min)) 
                 = toSave;
         }
@@ -313,6 +312,23 @@ DijkstraThread::DijkstraThread(int seedNum, vector<Point> points, Dijkstra& orig
     }
 }
 
+double combineDistSeed(float distance, int seed)
+{
+    double combined;
+    float* floatCombined = (float*) &combined;
+    *floatCombined = distance;
+    *(int*)(floatCombined + 1) = seed;
+    return combined;
+}
+
+pair<float, int> separateDistSeed(double combined)
+{
+    float* floatCombined = (float*) &combined;
+    float distance = *floatCombined;
+    int seed = *(int*)(floatCombined + 1);
+    return pair<float, int>(distance, seed);
+}
+
 void DijkstraThread::run()
 {
     int updateCount = 0;
@@ -327,27 +343,28 @@ void DijkstraThread::run()
         distances.erase(it);
         iterators.erase(point);
 
-        float curFinal = this->dijkstra.finalDists[point.first][point.second];
+        double desiredCombined = combineDistSeed(distance, seed);
+        double curCombined = this->dijkstra.output[point.first][point.second];
+        float curFinal = separateDistSeed(curCombined).first;
         if (curFinal <= distance) continue;
 
         bool updated = false;
         while (curFinal > distance)
         {
-            uint32_t finalUint = __sync_val_compare_and_swap(
-                (uint32_t*) &(this->dijkstra.finalDists[point.first][point.second]),
-                *(uint32_t*)(&curFinal),
-                *(uint32_t*)(&distance));
-            float newFinal = *(float*)(&finalUint);
-            if (newFinal == curFinal)
+            uint64_t finalUint = __sync_val_compare_and_swap(
+                (uint64_t*) &(this->dijkstra.output[point.first][point.second]),
+                *(uint64_t*)(&curCombined),
+                *(uint64_t*)(&desiredCombined));
+            double newCombined = *(double*)(&finalUint);
+            if (newCombined == curCombined)
             {
-                //TODO: make this atomic!!
-                this->dijkstra.assignments[point.first][point.second] = seed;
                 updated = true;
                 break;
             }
             else
             {
-                curFinal = newFinal;
+                curFinal = separateDistSeed(newCombined).first;
+                curCombined = newCombined;
             }
         }
 
@@ -355,7 +372,7 @@ void DijkstraThread::run()
         for (Point neighbor: graph.getNeighbors(point))
 
         {
-            float curFinalDist = this->dijkstra.finalDists[neighbor.first][neighbor.second];
+            float curFinalDist = separateDistSeed(this->dijkstra.output[neighbor.first][neighbor.second]).first;
             float newDistance = distance + graph.getEdgeWeight(point, neighbor);
             if (newDistance > MAX_DISTANCE) continue;
 
@@ -389,11 +406,9 @@ Dijkstra::~Dijkstra()
 {
     cilk_for (auto i = 0; i < graph.x_max; i++)
     {
-        delete(finalDists[i]);
-        delete(assignments[i]);
+        delete(output[i]);
     }
-    delete(finalDists);
-    delete(assignments);
+    delete(output);
 }
 
 void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur)

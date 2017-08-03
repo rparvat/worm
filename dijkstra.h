@@ -19,8 +19,7 @@ class DijkstraThread;
 
 class Dijkstra {
     public:
-        float** finalDists;
-        int** assignments;
+        double** output;
         Graph& graph;
         uint64_t overwrites;
         uint64_t threadsDone;
@@ -41,3 +40,6 @@ map<int, vector<Point>>* getSeeds(int z);
 void reconstruct(int z, bool saveSeeds, bool saveDists, int edgePower, int blur = 0);
 void saveProbs(int z, int blur);
 void saveEM(int z);
+
+double combineDistSeed(float distance, int seed);
+pair<float, int> separateDistSeed(double combined);
