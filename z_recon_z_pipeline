@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# 1
+# logdir="/home/rajeev/worm/output_images/log" # make this /dev/null for no log
+# xnndir="/mnt/disk7/rajeev/xnn_output/" # where probability maps are
+# outputdir="/mnt/disk7/rajeev/algo_output/" # where probability maps are
+
+# 2 %%% 7-stacks
+#logdir="/home/rajeev/worm/output_images/log-2" # make this /dev/null for no log
+#xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V6/xnn/final/" # where probability maps are
+#outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output/" # where probability maps are
+#outputdir="/home/rajeev/"
+
+# 3 %%% 7-stacks + skeleton 
+#logdir="/home/rajeev/worm/output_images/log-3" # make this /dev/null for no log
+#xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V7_skeletons/xnn/final/" # where probability maps are
+#outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output_skeleton/" # where probability maps are
+
+# 4 %%% 7-stacks + skeleton / tiff branch
+#logdir="/home/rajeev/worm/output_images/log-4" # make this /dev/null for no log
+#xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V7_skeletons/xnn/final/" # where probability maps are
+#outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output_skeleton_tiff/" # where probability maps are
+
+# 5 %%% 7-stacks / tiff branch
+#logdir="/home/rajeev/worm/output_images/log-5" # make this /dev/null for no log
+#xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V6/xnn/final/" # where probability maps are
+#outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output_tiff/" # where probability maps are
+
+# 6 %%% 7-stacks + skeleton average / tiff branch log prob blur 11 maxdist 25
+logdir="/home/rajeev/worm/output_images/log-6" # make this /dev/null for no log
+xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V8-average_skel_orig/" # where probability maps are
+outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output_average_tiff/" # where probability maps are
+
+
+mkdir $outputdir;
+
+
+function recon {
+    mkdir $outputdir$1;
+    SECONDS=0;
+    echo running $1 >> $logdir;
+
+    # initial tests
+    #/home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists true --maxDistance 20 --blur 7 --saveProbs false --showSeeds true --parallelWrite false --probDir $xnndir --outputDir $outputdir;
+
+    # best outcome so far 
+    #/home/rajeev/worm/worm --z $1 --edgePower 4 --saveSeeds true --saveDists false --maxDistance 1 --blur 9 --saveProbs false --showSeeds true --parallelWrite true --probDir $xnndir --outputDir $outputdir
+
+    # log, also ok
+    #/home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists false --maxDistance 20 --blur 9 --saveProbs false --showSeeds true --parallelWrite true --probDir $xnndir --outputDir $outputdir
+
+
+    /home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists false --maxDistance 25 --blur 11 --saveProbs false --showSeeds true --parallelWrite true --probDir $xnndir --outputDir $outputdir;
+
+
+    echo took $SECONDS seconds >> $logdir;
+    echo >> $logdir;
+}
+
+#recon 259
+
+for i in {293..293} # {269..269}
+do
+    recon $i
+done
+
+#for i in {0..1051}
+#do
+#    recon $i
+#done
+
+
+#for i in {634..699}
+#do
+#    recon $i
+#done
+

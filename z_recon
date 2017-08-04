@@ -1,23 +1,45 @@
 #!/bin/bash
 
-logdir="/home/rajeev/worm/output_images/log" # make this /dev/null for no log
-xnndir="/mnt/disk7/rajeev/xnn_output/" # where probability maps are
-outputdir="/mnt/disk7/rajeev/algo_output/" # where probability maps are
+# 1
+# logdir="/home/rajeev/worm/output_images/log" # make this /dev/null for no log
+# xnndir="/mnt/disk7/rajeev/xnn_output/" # where probability maps are
+# outputdir="/mnt/disk7/rajeev/algo_output/" # where probability maps are
+
+# 2
+logdir="/home/rajeev/worm/output_images/log-1" # make this /dev/null for no log
+xnndir="/mnt/disk7/yaron/worm-project-rajeev/tiles-medium_XNN_V6/xnn/final/" # where probability maps are
+outputdir="/mnt/disk7/yaron/worm-project-rajeev/algo_output/" # where probability maps are
+#outputdir="/home/rajeev/"
 
 function recon {
-    mkdir $probdir$1;
+    mkdir $outputdir$1;
     SECONDS=0;
     echo running $1 >> $logdir;
-    /home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists true --maxDistance 20 --blur 7 --saveProbs false --showSeeds true --parallelWrite false --probDir $xnndir --outputDir $outputdir;
+
+    #/home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists true --maxDistance 20 --blur 7 --saveProbs false --showSeeds true --parallelWrite false --probDir $xnndir --outputDir $outputdir;
+
+    /home/rajeev/worm/worm --z $1 --edgePower -1 --saveSeeds true --saveDists false --maxDistance 1 --blur 9 --saveProbs false --showSeeds true --parallelWrite true --probDir $xnndir --outputDir $outputdir
+
+
     echo took $SECONDS seconds >> $logdir;
     echo >> $logdir;
 }
 
-recon 259
+#recon 259
 
-
-for i in {591..999}
+for i in {997..997}
 do
     recon $i
 done
+
+#for i in {0..1051}
+#do
+#    recon $i
+#done
+
+
+#for i in {634..699}
+#do
+#    recon $i
+#done
 
