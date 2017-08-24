@@ -6,6 +6,7 @@
 #include <cilk/cilk.h>
 #include <climits>
 #include <cstdlib>
+#include <unordered_set>
 #include <opencv2/opencv.hpp>
 
 float DEFAULT_DISTANCE = INT_MAX;
@@ -88,6 +89,8 @@ void Dijkstra::saveSeeds()
     // map seeds to pixel values
     auto seeds = getSeeds(-1);
     map<int, cv::Vec3b> seedMap;
+    unordered_set<uint64_t> colorSet;
+
     seedMap[DEFAULT_SEED] = cv::Vec3b(0, 0, 0);
 
     string seedOutputPath = OUTPUT_PATH + to_string(graph.z) + "/";
@@ -99,10 +102,20 @@ void Dijkstra::saveSeeds()
     //      iterate over the vectors
     for (auto each : *seeds)
     {
-        uint64_t red = rand() % 256;
-        uint64_t green = rand() % 256;
-        uint64_t blue = rand() % 256;
-        seedMap[each.first] = cv::Vec3b(red, green, blue);
+        cv::Vec3b colorVec;
+        uint64_t red, green, blue, 
+                 combined;
+        while (true)
+        {
+            red = rand() % 256;
+            green = rand() % 256;
+            blue = rand() % 256;
+            colorVec = cv::Vec3b(red, green, blue);
+            combined = 1000 * 1000 * red + 1000 * green + blue;
+            if (!colorSet.count(combined)) break;
+        }
+        seedMap[each.first] = colorVec;
+        colorSet.insert(combined);
         colorfile << each.first << " " << red << " " << green << " " << blue << "\n";
     }
     colorfile.close();
